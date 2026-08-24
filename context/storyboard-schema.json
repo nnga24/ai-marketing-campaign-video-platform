@@ -1,0 +1,322 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "storyboard-schema.json",
+  "title": "Storyboard Generator — Input & Output Contract",
+  "description": "Structural contract for the AI Storyboard Generator. 'output' is the schema the generator must produce. '$defs.inputs.*' define the 8 input groups it consumes.",
+
+  "output": { "$ref": "#/$defs/storyboard" },
+
+  "$defs": {
+
+    "storyboard": {
+      "type": "object",
+      "required": ["version", "video", "creative", "scenes", "quality"],
+      "additionalProperties": false,
+      "properties": {
+        "version": { "type": "string", "const": "1.0" },
+        "video": { "$ref": "#/$defs/video" },
+        "creative": { "$ref": "#/$defs/creative" },
+        "scenes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/scene" }
+        },
+        "quality": { "$ref": "#/$defs/quality" }
+      }
+    },
+
+    "video": {
+      "type": "object",
+      "required": ["duration_target_seconds", "platform", "aspect_ratio", "language", "scene_count"],
+      "additionalProperties": false,
+      "properties": {
+        "duration_target_seconds": { "type": "number", "exclusiveMinimum": 0 },
+        "platform": { "type": "string" },
+        "aspect_ratio": { "type": "string", "enum": ["9:16", "16:9", "1:1", "4:5"] },
+        "language": { "type": "string" },
+        "scene_count": { "type": "integer", "minimum": 1 }
+      }
+    },
+
+    "creative": {
+      "type": "object",
+      "required": ["concept", "core_message", "story_structure"],
+      "additionalProperties": false,
+      "properties": {
+        "concept": { "type": "string" },
+        "core_message": { "type": "string" },
+        "story_structure": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["hook", "problem", "solution", "benefit", "cta"] }
+        },
+        "cta": { "type": "string" }
+      }
+    },
+
+    "scene": {
+      "type": "object",
+      "required": ["id", "purpose", "estimated_duration_seconds", "audio", "visual", "product", "overlay", "transition"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^scene_[0-9]+$" },
+        "purpose": { "type": "string", "enum": ["hook", "problem", "solution", "benefit", "cta"] },
+        "estimated_duration_seconds": { "type": "number", "exclusiveMinimum": 0 },
+        "audio": {
+          "type": "object",
+          "required": ["voice"],
+          "additionalProperties": false,
+          "properties": {
+            "script_segment_ids": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+            "voice": { "type": "string", "minLength": 1 },
+            "sfx": { "type": "array", "items": { "type": "string" } },
+            "bgm_volume": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "visual": {
+          "type": "object",
+          "required": ["type"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "type": "string", "enum": ["image_to_video", "text_to_video", "asset_insertion"] },
+            "asset_id": { "type": "string" },
+            "vfx": { "type": "array", "items": { "type": "string" } },
+            "subject": { "type": "string" },
+            "action": { "type": "string", "minLength": 1 },
+            "environment": { "type": "string", "minLength": 1 },
+            "emotion": { "type": "string", "minLength": 1 },
+            "composition": { "type": "string", "minLength": 1 },
+            "camera": {
+              "type": "object",
+              "required": ["shot", "angle", "movement"],
+              "additionalProperties": false,
+              "properties": {
+                "shot": { "type": "string" },
+                "angle": { "type": "string" },
+                "movement": {
+                  "type": "string",
+                  "enum": ["static", "slow_push_in", "slow_pull_out", "pan_left", "pan_right", "tilt_up", "tilt_down"]
+                }
+              }
+            },
+            "lighting": { "type": "string", "minLength": 1 },
+            "style": { "type": "string", "minLength": 1 }
+          }
+        },
+        "product": {
+          "type": "object",
+          "required": ["visible", "asset_ids"],
+          "additionalProperties": false,
+          "properties": {
+            "visible": { "type": "boolean" },
+            "asset_ids": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "overlay": {
+          "type": "object",
+          "required": ["enabled", "text", "position"],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "text": { "type": "string" },
+            "position": { "type": "string" },
+            "animation": { "type": "string" }
+          }
+        },
+        "transition": {
+          "type": "object",
+          "required": ["type"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "type": "string", "enum": ["cut", "fade", "dissolve", "match_cut", "glitch"] }
+          }
+        }
+      }
+    },
+
+    "quality": {
+      "type": "object",
+      "required": [
+        "narrative_score", "audio_visual_score", "product_consistency_score",
+        "platform_compliance_score", "production_feasibility_score",
+        "overall_score", "issues", "pass"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "narrative_score": { "type": "number", "minimum": 0, "maximum": 100 },
+        "audio_visual_score": { "type": "number", "minimum": 0, "maximum": 100 },
+        "product_consistency_score": { "type": "number", "minimum": 0, "maximum": 100 },
+        "platform_compliance_score": { "type": "number", "minimum": 0, "maximum": 100 },
+        "production_feasibility_score": { "type": "number", "minimum": 0, "maximum": 100 },
+        "overall_score": { "type": "number", "minimum": 0, "maximum": 100 },
+        "issues": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/issue" }
+        },
+        "pass": { "type": "boolean" }
+      }
+    },
+
+    "issue": {
+      "type": "object",
+      "required": ["scene_id", "category", "severity", "reason", "fix"],
+      "additionalProperties": false,
+      "properties": {
+        "scene_id": { "type": "string" },
+        "category": {
+          "type": "string",
+          "enum": ["narrative", "audio_visual", "product", "platform", "production", "duration"]
+        },
+        "severity": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "reason": { "type": "string" },
+        "fix": { "type": "string" }
+      }
+    },
+
+    "inputs": {
+
+      "marketing_brief": {
+        "type": "object",
+        "required": ["objective", "audience", "key_message", "platform", "duration_seconds"],
+        "properties": {
+          "objective": { "type": "string" },
+          "audience": {
+            "type": "object",
+            "required": ["age_range", "occupation", "pain_points", "needs"],
+            "properties": {
+              "age_range": { "type": "string" },
+              "occupation": { "type": "string" },
+              "pain_points": { "type": "array", "items": { "type": "string" } },
+              "needs": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "key_message": { "type": "string" },
+          "cta": { "type": "string", "description": "Optional. If absent, generator must derive from objective/creative strategy, or fail with INPUT_INVALID if CTA is required but not approved." },
+          "platform": { "type": "string" },
+          "duration_seconds": { "type": "number" },
+          "aspect_ratio": { "type": "string" }
+        }
+      },
+
+      "creative_idea": {
+        "type": "object",
+        "required": ["concept", "story_structure", "core_message"],
+        "properties": {
+          "concept": { "type": "string" },
+          "story_structure": { "type": "array", "items": { "type": "string" } },
+          "core_message": { "type": "string" }
+        }
+      },
+
+      "script": {
+        "type": "object",
+        "required": ["language", "segments"],
+        "properties": {
+          "language": { "type": "string" },
+          "segments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "text"],
+              "properties": {
+                "id": { "type": "string" },
+                "text": { "type": "string" }
+              }
+            }
+          }
+        },
+        "description": "Immutable by the Storyboard Generator. If a change is needed, return 'Script Revision Required' instead of silently editing."
+      },
+
+      "product": {
+        "type": "object",
+        "required": ["id", "name", "description", "features", "approved_claims"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "name", "description"],
+              "properties": {
+                "id": { "type": "string" },
+                "name": { "type": "string" },
+                "description": { "type": "string" }
+              }
+            }
+          },
+          "approved_claims": { "type": "array", "items": { "type": "string" } }
+        },
+        "description": "The only permitted source of product claims. Anything not derivable from features + approved_claims is CLAIM_UNVERIFIED."
+      },
+
+      "brand": {
+        "type": "object",
+        "required": ["name", "tone", "visual_style"],
+        "properties": {
+          "name": { "type": "string" },
+          "tone": { "type": "array", "items": { "type": "string" } },
+          "visual_style": {
+            "type": "object",
+            "required": ["style", "color_palette", "typography"],
+            "properties": {
+              "style": { "type": "string" },
+              "color_palette": { "type": "array", "items": { "type": "string" } },
+              "typography": { "type": "string" }
+            }
+          }
+        }
+      },
+
+      "assets": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["id", "type", "uri"],
+          "properties": {
+            "id": { "type": "string" },
+            "type": { "type": "string", "enum": ["product_image", "logo", "brand_guideline"] },
+            "uri": { "type": "string" }
+          }
+        }
+      },
+
+      "platform_constraints": {
+        "type": "object",
+        "required": ["platform", "aspect_ratio", "duration_seconds", "safe_area"],
+        "properties": {
+          "platform": { "type": "string" },
+          "aspect_ratio": { "type": "string" },
+          "duration_seconds": { "type": "number" },
+          "safe_area": {
+            "type": "object",
+            "required": ["top", "bottom"],
+            "properties": {
+              "top": { "type": "number", "minimum": 0, "maximum": 1 },
+              "bottom": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        }
+      },
+
+      "generation_capabilities": {
+        "type": "object",
+        "required": ["image_generation", "image_to_video", "text_to_video", "supported_camera_movements", "max_video_scene_duration_seconds"],
+        "properties": {
+          "image_generation": { "type": "boolean" },
+          "image_to_video": { "type": "boolean" },
+          "text_to_video": { "type": "boolean" },
+          "supported_camera_movements": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["static", "slow_push_in", "slow_pull_out", "pan_left", "pan_right", "tilt_up", "tilt_down"]
+            }
+          },
+          "max_video_scene_duration_seconds": { "type": "number" }
+        }
+      }
+    }
+  }
+}

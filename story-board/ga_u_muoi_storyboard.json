@@ -1,0 +1,275 @@
+{
+  "version": "1.0",
+  "video": {
+    "duration_target_seconds": 15,
+    "platform": "tiktok",
+    "aspect_ratio": "9:16",
+    "language": "vi",
+    "scene_count": 5
+  },
+  "creative": {
+    "concept": "A tired office worker easily prepares a delicious dinner using Bếp Sạch Việt's salt-steamed chicken.",
+    "core_message": "Gà ủ muối Bếp Sạch Việt: Thơm ngon, da giòn, tiện lợi ăn ngay không cần chế biến.",
+    "story_structure": [
+      "hook",
+      "problem",
+      "solution",
+      "benefit",
+      "cta"
+    ],
+    "cta": "Thử ngay Gà ủ muối Bếp Sạch Việt hôm nay!"
+  },
+  "scenes": [
+    {
+      "id": "scene_01",
+      "purpose": "hook",
+      "estimated_duration_seconds": 3,
+      "audio": {
+        "script_segment_ids": [
+          "script_01"
+        ],
+        "voice": "Đi làm về muộn, mệt mỏi mà vẫn phải vào bếp?",
+        "sfx": [
+          "deep_sigh_sound",
+          "sad_violin_short"
+        ],
+        "bgm_volume": 0.2
+      },
+      "visual": {
+        "type": "text_to_video",
+        "subject": "tired office worker",
+        "action": "walking into the kitchen looking very tired and sighing",
+        "environment": "modern home kitchen",
+        "emotion": "exhausted",
+        "composition": "medium",
+        "camera": {
+          "shot": "medium",
+          "angle": "eye_level",
+          "movement": "slow_push_in"
+        },
+        "lighting": "dim",
+        "style": "realistic commercial",
+        "vfx": [
+          "black_and_white_filter",
+          "slight_camera_shake"
+        ]
+      },
+      "product": {
+        "visible": false,
+        "asset_ids": []
+      },
+      "overlay": {
+        "enabled": true,
+        "text": "Trời ơi cứu tui!",
+        "position": "center",
+        "animation": "pop_up"
+      },
+      "transition": {
+        "type": "glitch"
+      }
+    },
+    {
+      "id": "scene_02",
+      "purpose": "problem",
+      "estimated_duration_seconds": 2.5,
+      "audio": {
+        "script_segment_ids": [
+          "script_02"
+        ],
+        "voice": "Bụng thì đói meo mà nghĩ cảnh nấu nướng rửa dọn lại ngán ngẩm...",
+        "sfx": [
+          "fast_clock_ticking",
+          "magic_wand_chime"
+        ],
+        "bgm_volume": 0.5
+      },
+      "visual": {
+        "type": "text_to_video",
+        "subject": "clock and dining table",
+        "action": "clock ticking quickly to emphasize 1 minute, transitioning to an empty dining table waiting for food",
+        "environment": "modern home dining area",
+        "emotion": "relieved, hopeful",
+        "composition": "close_up",
+        "camera": {
+          "shot": "close_up",
+          "angle": "high_angle",
+          "movement": "static"
+        },
+        "lighting": "bright indoor lighting",
+        "style": "realistic commercial",
+        "vfx": [
+          "fast_forward_effect"
+        ]
+      },
+      "product": {
+        "visible": false,
+        "asset_ids": []
+      },
+      "overlay": {
+        "enabled": true,
+        "text": "Ăn ngon trong 1 phút!",
+        "position": "bottom",
+        "animation": "slide_up"
+      },
+      "transition": {
+        "type": "match_cut"
+      }
+    },
+    {
+      "id": "scene_03",
+      "purpose": "solution",
+      "estimated_duration_seconds": 3.5,
+      "audio": {
+        "script_segment_ids": [
+          "script_03"
+        ],
+        "voice": "Gà ủ muối Bếp Sạch Việt. Da giòn sừn sựt, thịt chắc ngọt đậm đà.",
+        "sfx": [
+          "knife_chopping_crispy_skin_sound",
+          "sizzle_effect"
+        ],
+        "bgm_volume": 0.7
+      },
+      "visual": {
+        "type": "image_to_video",
+        "subject": "Gà ủ muối Bếp Sạch Việt",
+        "action": "knife slicing cleanly through the golden crispy skin of the whole chicken",
+        "environment": "kitchen counter with wooden cutting board",
+        "emotion": "appetizing, craving",
+        "composition": "close_up",
+        "camera": {
+          "shot": "close_up",
+          "angle": "eye_level",
+          "movement": "slow_push_in"
+        },
+        "lighting": "soft studio food lighting",
+        "style": "premium food commercial",
+        "vfx": [
+          "color_boost"
+        ]
+      },
+      "product": {
+        "visible": true,
+        "asset_ids": [
+          "ga_u_muoi_image_01"
+        ]
+      },
+      "overlay": {
+        "enabled": false,
+        "text": "",
+        "position": "center",
+        "animation": "none"
+      },
+      "transition": {
+        "type": "cut"
+      }
+    },
+    {
+      "id": "scene_04",
+      "purpose": "benefit",
+      "estimated_duration_seconds": 3,
+      "audio": {
+        "script_segment_ids": [
+          "script_04"
+        ],
+        "voice": "Mở bọc là ăn ngay, bữa tối hoàn hảo cho cả gia đình.",
+        "sfx": [
+          "happy_family_chatter",
+          "clinking_glasses"
+        ],
+        "bgm_volume": 0.8
+      },
+      "visual": {
+        "type": "text_to_video",
+        "subject": "happy family",
+        "action": "family sitting around the dinner table, smiling and enjoying dinner",
+        "environment": "warm home dining room",
+        "emotion": "happy, connected",
+        "composition": "wide",
+        "camera": {
+          "shot": "wide",
+          "angle": "eye_level",
+          "movement": "pan_right"
+        },
+        "lighting": "warm dinner lighting",
+        "style": "realistic commercial",
+        "vfx": [
+          "warm_color_filter"
+        ]
+      },
+      "product": {
+        "visible": false,
+        "asset_ids": []
+      },
+      "overlay": {
+        "enabled": false,
+        "text": "",
+        "position": "center",
+        "animation": "none"
+      },
+      "transition": {
+        "type": "fade"
+      }
+    },
+    {
+      "id": "scene_05",
+      "purpose": "cta",
+      "estimated_duration_seconds": 3,
+      "audio": {
+        "script_segment_ids": [
+          "script_05"
+        ],
+        "voice": "Thử ngay Gà ủ muối chuẩn vị từ Bếp Sạch Việt nhé!",
+        "sfx": [
+          "cash_register_ding",
+          "whoosh_in"
+        ],
+        "bgm_volume": 1.0
+      },
+      "visual": {
+        "type": "image_to_video",
+        "subject": "Gà ủ muối packaging and brand logo",
+        "action": "product packaging centered on screen with brand logo appearing prominently",
+        "environment": "clean studio background",
+        "emotion": "confident, inviting",
+        "composition": "product_hero",
+        "camera": {
+          "shot": "product_hero",
+          "angle": "eye_level",
+          "movement": "slow_pull_out"
+        },
+        "lighting": "bright studio lighting",
+        "style": "premium product commercial",
+        "vfx": [
+          "sparkle_effect"
+        ]
+      },
+      "product": {
+        "visible": true,
+        "asset_ids": [
+          "ga_u_muoi_packaging","https://bepsachviet.com/wp-content/uploads/2023/01/GA-U-MUOI-1.png",
+          "logo"
+        ]
+      },
+      "overlay": {
+        "enabled": true,
+        "text": "Mua Ngay!",
+        "position": "bottom",
+        "animation": "pulse"
+      },
+      "transition": {
+        "type": "cut"
+      }
+    }
+  ],
+  "quality": {
+    "narrative_score": 95,
+    "audio_visual_score": 98,
+    "product_consistency_score": 100,
+    "platform_compliance_score": 100,
+    "production_feasibility_score": 95,
+    "overall_score": 97,
+    "issues": [],
+    "pass": true
+  }
+}

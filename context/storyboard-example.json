@@ -1,0 +1,179 @@
+{
+  "version": "1.0",
+
+  "video": {
+    "duration_target_seconds": 15,
+    "platform": "tiktok",
+    "aspect_ratio": "9:16",
+    "language": "vi",
+    "scene_count": 4
+  },
+
+  "creative": {
+    "concept": "A long workday becomes more comfortable.",
+    "core_message": "Ergonomic Chair X1 provides ergonomic support for long working sessions.",
+    "story_structure": ["hook", "problem", "solution", "benefit", "cta"],
+    "cta": "Khám phá X1 ngay hôm nay."
+  },
+
+  "scenes": [
+    {
+      "id": "scene_01",
+      "purpose": "hook",
+      "estimated_duration_seconds": 3.5,
+      "voice": {
+        "script_segment_ids": ["script_01"],
+        "text": "Bạn ngồi 8 tiếng mỗi ngày?"
+      },
+      "visual": {
+        "type": "image_to_video",
+        "subject": "office worker",
+        "action": "sitting at desk and showing slight discomfort",
+        "environment": "modern office",
+        "emotion": "slightly uncomfortable",
+        "composition": "medium",
+        "camera": {
+          "shot": "medium",
+          "angle": "eye_level",
+          "movement": "slow_push_in"
+        },
+        "lighting": "natural office lighting",
+        "style": "realistic commercial"
+      },
+      "product": {
+        "visible": false,
+        "asset_ids": []
+      },
+      "overlay": {
+        "enabled": true,
+        "text": "Ngồi 8 tiếng mỗi ngày?",
+        "position": "center"
+      },
+      "transition": {
+        "type": "cut"
+      }
+    },
+
+    {
+      "id": "scene_02",
+      "purpose": "solution",
+      "estimated_duration_seconds": 3.5,
+      "voice": {
+        "script_segment_ids": ["script_02"],
+        "text": "Hãy thử Ergonomic Chair X1."
+      },
+      "visual": {
+        "type": "image_to_video",
+        "subject": "Ergonomic Chair X1",
+        "action": "slowly reveal the chair from a three-quarter angle",
+        "environment": "clean modern office",
+        "emotion": "premium",
+        "composition": "product_hero",
+        "camera": {
+          "shot": "product_hero",
+          "angle": "three_quarter",
+          "movement": "slow_push_in"
+        },
+        "lighting": "soft studio lighting",
+        "style": "premium product commercial"
+      },
+      "product": {
+        "visible": true,
+        "asset_ids": ["product_front"]
+      },
+      "overlay": {
+        "enabled": false,
+        "text": "",
+        "position": "center"
+      },
+      "transition": {
+        "type": "cut"
+      }
+    },
+
+    {
+      "id": "scene_03",
+      "purpose": "benefit",
+      "estimated_duration_seconds": 4,
+      "voice": {
+        "script_segment_ids": ["script_03"],
+        "text": "Tựa lưng công thái học giúp bạn thoải mái hơn trong những ngày làm việc dài."
+      },
+      "visual": {
+        "type": "image_to_video",
+        "subject": "Ergonomic Chair X1 lumbar support area",
+        "action": "close-up on the backrest gently supporting the user's lower back as they lean back",
+        "environment": "clean modern office",
+        "emotion": "relieved, comfortable",
+        "composition": "close_up",
+        "camera": {
+          "shot": "close_up",
+          "angle": "eye_level",
+          "movement": "static"
+        },
+        "lighting": "soft studio lighting",
+        "style": "premium product commercial"
+      },
+      "product": {
+        "visible": true,
+        "asset_ids": ["product_detail"]
+      },
+      "overlay": {
+        "enabled": false,
+        "text": "",
+        "position": "center"
+      },
+      "transition": {
+        "type": "cut"
+      }
+    },
+
+    {
+      "id": "scene_04",
+      "purpose": "cta",
+      "estimated_duration_seconds": 4,
+      "voice": {
+        "script_segment_ids": ["script_04"],
+        "text": "Khám phá X1 ngay hôm nay."
+      },
+      "visual": {
+        "type": "image_to_video",
+        "subject": "Ergonomic Chair X1 with brand logo",
+        "action": "full product shot with logo appearing beside it",
+        "environment": "clean modern office",
+        "emotion": "confident, inviting",
+        "composition": "product_hero",
+        "camera": {
+          "shot": "wide",
+          "angle": "eye_level",
+          "movement": "slow_pull_out"
+        },
+        "lighting": "soft studio lighting",
+        "style": "premium product commercial"
+      },
+      "product": {
+        "visible": true,
+        "asset_ids": ["product_front", "logo"]
+      },
+      "overlay": {
+        "enabled": true,
+        "text": "Khám phá X1 ngay hôm nay.",
+        "position": "center"
+      },
+      "transition": {
+        "type": "fade"
+      }
+    }
+  ],
+
+  "quality": {
+    "narrative_score": 92,
+    "audio_visual_score": 90,
+    "product_consistency_score": 100,
+    "platform_compliance_score": 95,
+    "production_feasibility_score": 88,
+    "overall_score": 93,
+    "issues": [],
+    "pass": true
+  }
+}

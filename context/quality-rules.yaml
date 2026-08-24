@@ -1,0 +1,98 @@
+version: "1.0"
+description: >
+  Scoring rubric and pass/fail gate for the `quality` object in a generated
+  storyboard. Used by the Semantic Judge step (LLM-as-judge) and/or a code
+  aggregator after storyboard-rules.yaml's hard constraints have been checked.
+
+# ---------------------------------------------------------------------------
+# Score weights (must sum to 1.0)
+# ---------------------------------------------------------------------------
+weights:
+  narrative_score: 0.25
+  audio_visual_score: 0.25
+  product_consistency_score: 0.20
+  platform_compliance_score: 0.15
+  production_feasibility_score: 0.15
+
+overall_score_formula: >
+  overall = narrative_score * 0.25
+          + audio_visual_score * 0.25
+          + product_consistency_score * 0.20
+          + platform_compliance_score * 0.15
+          + production_feasibility_score * 0.15
+
+# ---------------------------------------------------------------------------
+# What each score measures
+# ---------------------------------------------------------------------------
+criteria:
+  narrative:
+    checks:
+      - hook_present
+      - problem_or_context_present
+      - solution_present
+      - benefit_present
+      - cta_present
+      - logical_sequence
+  audio_visual:
+    checks:
+      - visual_supports_voice
+      - no_contradiction
+      - no_irrelevant_visual
+  product:
+    checks:
+      - correct_product
+      - correct_features
+      - no_invented_claims
+      - consistent_appearance
+  platform:
+    checks:
+      - duration_within_tolerance
+      - aspect_ratio_correct
+      - safe_area_respected
+      - cta_present_if_required
+  production:
+    checks:
+      - generate_able
+      - camera_controllable
+      - product_reference_usable
+      - reasonable_complexity
+
+# ---------------------------------------------------------------------------
+# Pass criteria — ALL must be true
+# ---------------------------------------------------------------------------
+pass_criteria:
+  overall_score_min: 85
+  narrative_score_min: 80
+  audio_visual_score_min: 80
+  product_consistency_score_min: 90
+  platform_compliance_score_min: 90
+  production_feasibility_score_min: 75
+  no_hard_constraint_violation: true   # see storyboard-rules.yaml -> hard_constraints
+
+note: >
+  overall_score >= 85 alone is NOT sufficient. Every per-category minimum
+  must also be met, AND no hard constraint (HC-01..HC-12) may be violated —
+  a hard constraint violation fails the storyboard even at overall_score = 95.
+
+# ---------------------------------------------------------------------------
+# Issue reporting format
+# ---------------------------------------------------------------------------
+issue_schema:
+  fields:
+    scene_id: string
+    category: [narrative, audio_visual, product, platform, production, duration]
+    severity: [low, medium, high, critical]
+    reason: string   # what's wrong, specific to the scene
+    fix: string       # concrete suggested fix, not a vague note
+
+  example:
+    scene_id: scene_03
+    category: audio_visual
+    severity: high
+    reason: "Voice describes lumbar support but visual does not show the lumbar support."
+    fix: "Replace the wide product shot with a close-up of the lumbar support."
+
+# ---------------------------------------------------------------------------
+# What happens on FAIL
+# ---------------------------------------------------------------------------
+on_fail: "see storyboard-rules.yaml -> regeneration_strategy"

@@ -1,0 +1,248 @@
+version: "1.0"
+description: >
+  Machine-readable business rules for validating Storyboard Generator output.
+  Paired with storyboard-schema.json (structural contract). A code Rule Engine
+  should enforce every rule here; the LLM must not be treated as its own validator.
+
+# ---------------------------------------------------------------------------
+# 1. Input validation — run before generation
+# ---------------------------------------------------------------------------
+input_validation:
+  required_present:
+    - marketing_brief
+    - script
+    - product
+    - platform
+    - duration_seconds
+    - required_assets
+  on_missing: INPUT_INVALID
+  no_guessing: true   # generator must not infer missing critical data
+
+  cta:
+    if_absent_in_marketing_brief: "derive from objective / creative strategy"
+    if_required_but_not_approved: INPUT_INVALID
+
+  script:
+    mutable_by_generator: false
+    if_change_needed: "return SCRIPT_REVISION_REQUIRED, do not silently edit"
+
+# ---------------------------------------------------------------------------
+# 2. Script → Scene mapping
+# ---------------------------------------------------------------------------
+scene_mapping:
+  allowed:
+    - "1 script_segment -> 1 scene"
+    - "1 script_segment -> N scenes (multiple visuals for one line)"
+  restricted:
+    - rule: "N unrelated script_segments -> 1 visual"
+      condition: "only allowed if the visual genuinely supports all mapped segments"
+  semantic_anchor: audio   # visual is always derived from what voice/audio says, never the reverse
+
+# ---------------------------------------------------------------------------
+# 3. Audio rules
+# ---------------------------------------------------------------------------
+audio_rules:
+  must:
+    - natural_speech
+    - consistent_with_script
+    - consistent_with_scene_purpose
+    - consistent_with_marketing_message
+  must_not:
+    - camera_instruction_in_text
+    - visual_instruction_in_text
+    - editing_instruction_in_text
+    - unsupported_product_claim
+
+# ---------------------------------------------------------------------------
+# 4. Visual rules
+# ---------------------------------------------------------------------------
+visual_rules:
+  required_fields:
+    - subject
+    - action
+    - environment
+    - emotion
+    - composition
+    - camera
+    - lighting
+    - style
+  reject_if_generic: true   # e.g. "Show an office." is not acceptable
+
+# ---------------------------------------------------------------------------
+# 5. Audio-visual alignment
+# ---------------------------------------------------------------------------
+audio_visual_alignment:
+  check: "audio_meaning == visual_meaning (semantic alignment)"
+  fail_example:
+    audio: "lumbar support"
+    visual: "person drinking coffee"
+
+# ---------------------------------------------------------------------------
+# 6. Product consistency
+# ---------------------------------------------------------------------------
+product_consistency:
+  must_match_across_scenes:
+    - identity
+    - shape
+    - important_characteristics
+    - approved_features
+  fail_example: "chair color/model changes scene-to-scene without product data allowing it"
+
+# ---------------------------------------------------------------------------
+# 7. Product claim validation
+# ---------------------------------------------------------------------------
+product_claims:
+  every_claim_must_have_source: true
+  source_path_example: "product.features.<feature_id>"
+  on_unverifiable_source: CLAIM_UNVERIFIED   # -> FAIL
+
+# ---------------------------------------------------------------------------
+# 8. Camera rules
+# ---------------------------------------------------------------------------
+camera_rules:
+  allowed_movements:
+    - static
+    - slow_push_in
+    - slow_pull_out
+    - pan_left
+    - pan_right
+    - tilt_up
+    - tilt_down
+  constraint: "movement must be a subset of generation_capabilities.supported_camera_movements"
+
+# ---------------------------------------------------------------------------
+# 9. Production feasibility
+# ---------------------------------------------------------------------------
+production_feasibility:
+  evaluate:
+    - can_ai_generate_this
+    - can_product_reference_be_maintained
+    - can_camera_movement_be_controlled
+    - can_scene_duration_be_achieved
+  prefer:
+    - simple_subject
+    - simple_action
+    - simple_camera
+    - controlled_environment
+    - product_reference
+  avoid: "cinematic complexity when not necessary"
+
+# ---------------------------------------------------------------------------
+# 10. Duration rules
+# ---------------------------------------------------------------------------
+duration_rules:
+  storyboard_contains_only: estimated_duration_seconds
+  final_timestamp_source: "TTS -> voice.mp3 -> Whisper/Forced Alignment -> Timeline Engine"
+  scene_sum_validation:
+    check: "SUM(scene.estimated_duration_seconds) ≈ video.duration_target_seconds"
+    tolerance_percent: 10
+    on_exceed: FAIL
+
+# ---------------------------------------------------------------------------
+# 11. CTA rules
+# ---------------------------------------------------------------------------
+cta_rules:
+  video_should_have_cta: true
+  cta_must:
+    - match_marketing_brief
+    - match_creative_strategy
+    - be_visible_or_audible
+  cta_scene_should_contain:
+    - product
+    - logo
+    - cta
+
+# ---------------------------------------------------------------------------
+# 12. Overlay rules
+# ---------------------------------------------------------------------------
+overlay_rules:
+  optional: true
+  if_enabled_must_be:
+    - short
+    - readable
+    - relevant
+    - safe_area_compliant
+  reject_if: "text too long for AI-generated overlay"
+
+# ---------------------------------------------------------------------------
+# 13. Transition rules
+# ---------------------------------------------------------------------------
+transition_rules:
+  default: cut
+  allowed:
+    - cut
+    - fade
+    - dissolve
+    - match_cut
+    - glitch
+  constraint: "must have a narrative reason, not used purely for decoration"
+
+# ---------------------------------------------------------------------------
+# 14. Hard constraints — ANY violation = automatic FAIL regardless of overall_score
+# ---------------------------------------------------------------------------
+hard_constraints:
+  - id: HC-01
+    rule: Invalid JSON
+  - id: HC-02
+    rule: Missing required field
+  - id: HC-03
+    rule: No scene
+  - id: HC-04
+    rule: No CTA when CTA is required
+  - id: HC-05
+    rule: Unsupported product claim
+  - id: HC-06
+    rule: Product identity contradiction
+  - id: HC-07
+    rule: Duration exceeds allowed duration
+  - id: HC-08
+    rule: Unsupported platform
+  - id: HC-09
+    rule: Invalid aspect ratio
+  - id: HC-10
+    rule: Audio contradicts visual
+  - id: HC-11
+    rule: Scene purpose contradicts creative structure
+  - id: HC-12
+    rule: Unsupported generation capability
+
+# ---------------------------------------------------------------------------
+# 15. Regeneration strategy
+# ---------------------------------------------------------------------------
+regeneration_strategy:
+  default: "regenerate only the failing scene, then re-validate"
+  full_regeneration_required_if:
+    - creative_structure_broken
+    - core_message_broken
+    - script_mapping_broken
+    - global_duration_broken
+
+# ---------------------------------------------------------------------------
+# 16. Generator responsibilities (for prompt / guardrail enforcement)
+# ---------------------------------------------------------------------------
+responsibilities:
+  must:
+    - understand_marketing_brief
+    - understand_creative_idea
+    - understand_script
+    - understand_product
+    - split_script_into_scenes
+    - define_scene_purpose
+    - define_visual
+    - define_camera
+    - define_product_visibility
+    - define_overlay
+    - define_transition
+    - check_audio_visual_consistency
+    - check_product_claims
+    - check_production_feasibility
+    - self_evaluate
+  must_not:
+    - create_final_video
+    - create_final_timestamp
+    - edit_product_data
+    - invent_product_claims
+    - change_cta_without_authorization
+    - change_duration_without_authorization
+    - create_visual_unrelated_to_voice
+    - use_unsupported_generation_capability
