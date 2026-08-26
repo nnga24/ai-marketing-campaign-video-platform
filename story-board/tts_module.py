@@ -11,15 +11,14 @@ from typing import List, Dict, Any, Optional
 # (Có thể tích hợp bằng dotenv hoặc env vars)
 # ==========================================
 STORYBOARD_FILE = "ga_u_muoi_storyboard.json"
-AUDIO_JSON_FILE = "audio.json"
-MANIFEST_FILE = "audio_manifest.json"
-OUTPUT_DIR = "voice"
+
+# Cấu hình API
 
 # ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", "YOUR_API_KEY_HERE")
 ELEVENLABS_API_KEY = "sk_bb6a7e8811fc672625424e4cdfcbf009871bc70ff970a0ea"
-VOICE_ID = "qvqJAcNJfpjBa72HFXsB"
+VOICE_ID = "Xb7hH8MSUJpSbSDYk0k2" #alice
 TTS_MODEL = "eleven_turbo_v2_5" # Lưu ý: Nếu web bạn dùng V3, hãy thử đổi thành "eleven_turbo_v2_5" hoặc "eleven_multilingual_v2"
-VOICE_PROFILE_NAME = "VIETNAMESE_MALE_WARM"
+VOICE_PROFILE_NAME = "AlICE"
 
 # ==========================================
 # 1. DATA CLASSES
@@ -186,7 +185,7 @@ class TTSOrchestrator:
 
     def _save_manifest(self, segments: List[dict], voice_profile: str):
         manifest_data = {
-            "source": AUDIO_JSON_FILE,
+            "source": "audio.json",
             "voice_profile": voice_profile,
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "segments": segments
@@ -201,8 +200,29 @@ class TTSOrchestrator:
 # 5. ENTRY POINT
 # ==========================================
 if __name__ == "__main__":
+    import datetime
+
+    # Tính toán thư mục đầu ra động: voice/DD_MM_YYYY-Tên_Storyboard/Tên_Voice
+    date_str = datetime.datetime.now().strftime("%d_%m_%Y")
+    base_name = os.path.splitext(os.path.basename(STORYBOARD_FILE))[0]
+    
+    # Ở cấu hình đang dùng, Voice Profile Name đang là VIETNAMESE_MALE_WARM
+    # Bạn có thể đổi tên này thành tên người thật (vd: 'adam', 'alice') cho thư mục dễ nhìn.
+    # Ta dùng VOICE_PROFILE_NAME hoặc VOICE_ID để phân biệt thư mục
+    actor_name = VOICE_PROFILE_NAME.lower().replace(" ", "_")
+    
+    dynamic_dir = os.path.join("voice", f"{date_str}-{base_name}", actor_name)
+    
+    # Đảm bảo thư mục tồn tại
+    if not os.path.exists(dynamic_dir):
+        os.makedirs(dynamic_dir)
+
+    # Đưa các file JSON vào chung thư mục động để đi kèm với audio
+    audio_json_path = os.path.join(dynamic_dir, "audio.json")
+    manifest_json_path = os.path.join(dynamic_dir, "audio_manifest.json")
+
     # Bước 1: Parse Storyboard để lấy audio.json
-    parser = StoryboardParser(input_file=STORYBOARD_FILE, output_file=AUDIO_JSON_FILE)
+    parser = StoryboardParser(input_file=STORYBOARD_FILE, output_file=audio_json_path)
     audio_data_list = parser.parse_and_save()
 
     if audio_data_list:
@@ -216,8 +236,8 @@ if __name__ == "__main__":
         # Bước 3: Điều phối và sinh audio
         orchestrator = TTSOrchestrator(
             provider=elevenlabs_provider, 
-            output_dir=OUTPUT_DIR, 
-            manifest_file=MANIFEST_FILE
+            output_dir=dynamic_dir, 
+            manifest_file=manifest_json_path
         )
         
         orchestrator.process(audio_data=audio_data_list, voice_profile=VOICE_PROFILE_NAME)
