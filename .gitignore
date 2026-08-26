@@ -1,0 +1,20 @@
+# Environment variables (Private / Secret Keys)
+.env
+.env.local
+
+# Python cache & build
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Video processing temporary files & backups
+assets/generated_scenes/raw/
+*.tmp.mp4
+*.tmp
+
+# Operating System
+.DS_Store
+Thumbs.db
+ehthumbs.db
