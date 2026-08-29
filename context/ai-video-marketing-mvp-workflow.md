@@ -276,17 +276,19 @@ Nếu duration video không khớp:
 
 ---
 
-## 10. Subtitle ( khó )
+## 10. Subtitle (Toán học thuần túy - Pha 2)
 
 ```text
-voice.mp3
-   ↓
-Whisper
-   ↓
-SRT / VTT
+[ Storyboard Text ] + [ Audio Duration ]
+           ↓
+[ Thuật toán chia đều thời gian ]
+           ↓
+[ MoviePy / PIL (fl_image) ]
+           ↓
+[ Video có Subtitle Karaoke ]
 ```
 
-Subtitle được đưa vào rendering pipeline.
+Hệ thống sử dụng thuật toán đếm chữ và chia đều thời lượng (Linear Time Allocation) từ kịch bản gốc. Cách này không cần sử dụng AI (như Whisper), đảm bảo chạy offline 100%, không tốn tài nguyên và không yêu cầu cài đặt phần mềm bên thứ ba (như ImageMagick).
 
 ---
 

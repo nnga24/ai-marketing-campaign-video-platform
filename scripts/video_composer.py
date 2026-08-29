@@ -15,6 +15,7 @@ from moviepy.editor import VideoFileClip, AudioFileClip, concatenate_videoclips
 import moviepy.video.fx.all as vfx
 
 WORKSPACE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+STORYBOARD_PATH = os.path.join(WORKSPACE_DIR, "story-board", "ga_u_muoi_storyboard.json")
 VOICE_DIR = os.path.join(WORKSPACE_DIR, "story-board", "voice")
 GENERATED_SCENES_DIR = os.path.join(WORKSPACE_DIR, "assets", "generated_scenes")
 OUTPUT_DIR = os.path.join(WORKSPACE_DIR, "assets", "final_videos")
@@ -29,6 +30,54 @@ def find_latest_manifest():
     manifests.sort(key=os.path.getmtime, reverse=True)
     return manifests[0]
 
+def draw_subtitle_on_frame(frame, t, text, total_duration):
+    from PIL import Image, ImageDraw, ImageFont
+    import numpy as np
+    
+    img = Image.fromarray(frame)
+    draw = ImageDraw.Draw(img)
+    
+    words = text.split()
+    total_words = len(words)
+    if total_words == 0:
+        return frame
+        
+    progress = min(1.0, max(0.0, t / total_duration))
+    current_word_idx = int(progress * total_words)
+    if current_word_idx >= total_words:
+        current_word_idx = total_words - 1
+        
+    chunk_size = 5
+    chunk_idx = current_word_idx // chunk_size
+    start_idx = chunk_idx * chunk_size
+    end_idx = min(start_idx + chunk_size, total_words)
+    display_text = " ".join(words[start_idx:end_idx]).upper()
+    
+    try:
+        font = ImageFont.truetype("arialbd.ttf", 75)
+    except:
+        font = ImageFont.load_default()
+        
+    try:
+        tw, th = draw.textsize(display_text, font=font)
+    except AttributeError:
+        bbox = draw.textbbox((0,0), display_text, font=font)
+        tw = bbox[2] - bbox[0]
+        th = bbox[3] - bbox[1]
+        
+    w, h = img.size
+    x = (w - tw) // 2
+    y = int(h * 0.75)
+    
+    try:
+        draw.text((x, y), display_text, font=font, fill=(255, 200, 0), stroke_width=5, stroke_fill=(0,0,0))
+    except TypeError:
+        draw.text((x-3, y-3), display_text, font=font, fill=(0,0,0))
+        draw.text((x+3, y+3), display_text, font=font, fill=(0,0,0))
+        draw.text((x, y), display_text, font=font, fill=(255, 200, 0))
+        
+    return np.array(img)
+
 def main():
     print("============================================================")
     print("🎬 BƯỚC 2.5: VIDEO COMPOSER (HẬU KỲ VÀ GHÉP NỐI)")
@@ -40,6 +89,10 @@ def main():
         return
         
     print(f"✅ Tìm thấy âm thanh mới nhất tại: {manifest_path}")
+    
+    with open(STORYBOARD_PATH, "r", encoding="utf-8") as f:
+        storyboard = json.load(f)
+    scenes_data = {sc["id"]: sc for sc in storyboard.get("scenes", [])}
     
     manifest_dir = os.path.dirname(manifest_path)
     final_clips = []
@@ -71,6 +124,14 @@ def main():
             
         # Gắn âm thanh vào video
         video_clip = video_clip.set_audio(audio_clip)
+        
+        # Áp dụng thuật toán phụ đề
+        scene_text = scenes_data.get(sc_id, {}).get("audio", {}).get("voice", "")
+        if scene_text:
+            def fl_fun(gf, t, text=scene_text, dur=video_clip.duration):
+                return draw_subtitle_on_frame(gf(t), t, text, dur)
+            video_clip = video_clip.fl(fl_fun, apply_to=['video'])
+            
         final_clips.append(video_clip)
         
     if not final_clips:
