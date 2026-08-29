@@ -90,6 +90,10 @@ def create_motion_clip_from_image(image_path, output_path, duration_sec=3.0, fps
     Includes camera pan/zoom, subtle vignette, dynamic lighting effects, and animated text overlays.
     """
     if not image_path or not os.path.exists(image_path):
+        print(f"\n⚠️ [CẢNH BÁO] Scene '{scene_title}' bị thiếu ảnh đầu vào (reference_image)!")
+        print(f"👉 Hướng dẫn: Hãy cung cấp một bức ảnh cho cảnh này hoặc gọi API để gen video tự động.")
+        print(f"👉 Tạm thời hệ thống sẽ tạo Phông nền giữ chỗ (Placeholder) để không làm hỏng Video...\n")
+        
         # Create a stylish dark gradient background with aesthetic graphic accents
         img = np.zeros((height, width, 3), dtype=np.uint8)
         for y in range(height):
@@ -207,16 +211,11 @@ def render_all_fallback_scenes(storyboard):
         
         scene_title = f"{sc_id.upper()} - {sc['purpose'].upper()}"
         
-        if sc_id == "scene_05":
-            pkg_path = os.path.join(INPUT_IMAGES_DIR, "ga_u_muoi_packaging.png")
-            if os.path.exists(pkg_path):
-                img_path = pkg_path
-        elif sc_id == "scene_03":
-            dish_path = os.path.join(INPUT_IMAGES_DIR, "ga_u_muoi_image_01.png")
-            if not os.path.exists(dish_path):
-                dish_path = os.path.join(INPUT_IMAGES_DIR, "ga_u_muoi_image_01.jpg")
-            if os.path.exists(dish_path):
-                img_path = dish_path
+        ref_image = sc.get("visual", {}).get("reference_image")
+        if ref_image:
+            abs_img_path = os.path.join(WORKSPACE_DIR, ref_image)
+            if os.path.exists(abs_img_path):
+                img_path = abs_img_path
         
         cam_movement = sc.get("visual", {}).get("camera", {}).get("movement", "slow_push_in")
         motion_type = "zoom_in" if "push" in cam_movement else ("zoom_out" if "pull" in cam_movement else "pan_up")

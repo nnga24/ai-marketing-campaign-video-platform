@@ -10,36 +10,26 @@ MVP không cần người mở CapCut/Premiere để chỉnh thủ công.
 
 ---
 
-## 2. Tổng quan
+## 2. Tổng quan (Human-in-the-Loop)
 
 ```text
-DOANH NGHIỆP
-    ↓
-① Business Data
-    ↓
-② Marketing Brief
-    ↓
-③ Creative Idea
-    ↓
-④ Script + Storyboard
-    ├──────────────┐
-    ↓              ↓
-⑤ Voice        ⑥ Visual
-    ↓              ↓
-TTS            Image/Video AI
-    ↓              ↓
-Whisper        Scene Videos
-    └──────┬───────┘
+[ DOANH NGHIỆP / USER ] (Upload Ảnh, Video Meme, Yêu cầu)
            ↓
-⑦ Timeline Sync
+[ AI GEN 1 ] Phân tích Business Data, Target Audience, Angles
            ↓
-⑧ Subtitle
+🛑 [ TOUCHPOINT 1 ] User xem, chỉnh sửa và chốt Business Data
            ↓
-⑨ Video Rendering
+[ AI GEN 2 ] Sinh kịch bản và Storyboard chi tiết
            ↓
-⑩ Quality Check
+🛑 [ TOUCHPOINT 2 ] User sửa thoại, điều chỉnh Visual, chọn giọng
            ↓
-       FINAL VIDEO
+[ AI GEN 3 ] Gọi API sinh Voice (TTS) & Video Scenes (Motion/AI)
+           ↓
+🛑 [ TOUCHPOINT 3 ] User duyệt âm thanh và các cảnh video
+           ↓
+[ AI COMPOSER ] Ghép nối (Timeline sync), Subtitle, BGM, Render
+           ↓
+🛑 [ TOUCHPOINT 4 ] Final Review & Chốt Video Cuối
 ```
 
 ---
@@ -558,62 +548,43 @@ final.mp4
 
 ---
 
-## 18. Kịch bản demo
+## 18. Kịch bản demo (Interactive Flow)
 
-### User nhập
-
+### Bước 1: User cung cấp đầu vào
 ```text
-Product:
-Ergonomic Chair X1
-
-Description:
-Ghế văn phòng công thái học có lumbar support
-và armrest điều chỉnh.
-
-Audience:
-Nhân viên văn phòng 25–40 tuổi.
-
-Goal:
-Product awareness.
-
-Platform:
-TikTok.
-
-Duration:
-15 seconds.
-
-Upload:
-product.jpg
-logo.png
+Upload: 
+- 2 ảnh sản phẩm (product.jpg, packaging.png)
+- 1 video meme (meme_reaction.mp4)
+Yêu cầu: "Làm 1 video tiktok hài hước bán Gà Ủ Muối"
 ```
 
-### User bấm
-
+### Bước 2: AI Phân tích & User Chốt (Touchpoint 1)
 ```text
-[ GENERATE VIDEO ]
+Hệ thống: "Dựa vào dữ liệu, tệp khách hàng là Dân văn phòng bận rộn. Angle: Mệt mỏi sau giờ làm, thèm đồ ăn sẵn ngon. Mời bạn duyệt cấu trúc."
+User: "Ok, đổi tệp khách hàng sang gen Z nữa."
+Hệ thống: Cập nhật Business Data.
 ```
 
-### Hệ thống
-
+### Bước 3: AI Sinh Storyboard & User Chốt (Touchpoint 2)
 ```text
-✓ Analyzing product
-✓ Creating marketing brief
-✓ Creating creative concept
-✓ Creating script
-✓ Creating storyboard
-✓ Generating product scene
-✓ Generating voice
-✓ Generating subtitles
-✓ Synchronizing timeline
-✓ Rendering video
-✓ Quality checking
+Hệ thống: Trình bày Storyboard 5 scenes.
+User: "Sửa lại câu hook ở scene 1 thành: Đi làm về mệt thì ăn gì cho bốc? Chọn giọng đọc Nam Trầm."
+Hệ thống: Cập nhật Storyboard JSON.
 ```
 
-### Output
-
+### Bước 4: AI Sinh Assets & User Chốt (Touchpoint 3)
 ```text
+Hệ thống: Đã sinh ra 5 file audio mp3 và 5 file video mp4.
+User: "Nghe thử file audio 1... Ok duyệt. Video scene 3 hơi tối, làm sáng lên tí."
+Hệ thống: Sinh lại Video scene 3. User chốt toàn bộ.
+```
+
+### Bước 5: Render & Final Review (Touchpoint 4)
+```text
+Hệ thống: Đã ghép nối xong.
 FINAL VIDEO
 [▶ Play Video]
+User: "Tuyệt vời, chốt!"
 ```
 
 ---

@@ -7,7 +7,7 @@
       "purpose": "hook",
       "type": "text_to_video",
       "estimated_duration": 3,
-      "ai_video_prompt": "Cinematic TikTok commercial video, medium shot with slow push in. tired office worker, walking into the kitchen looking very tired and sighing. Environment: modern home kitchen. Lighting: dim. Atmosphere: exhausted. Style: realistic commercial, 4k ultra detailed, photorealistic.",
+      "ai_video_prompt": "Cinematic TikTok commercial video, medium shot shot with slow push in. A tired office worker, rubbing eyes and touching stomach hungrily. Environment: dark modern apartment at night. Lighting: natural lighting. Atmosphere: . Style: realistic commercial, 4k ultra detailed, photorealistic.",
       "negative_prompt": "blurry, low quality, distorted anatomy, morphing artifacts, extra limbs, watermark, amateur video, flickering",
       "camera_control": {
         "movement": "slow push in",
@@ -19,12 +19,12 @@
       "scene_id": "scene_02",
       "purpose": "problem",
       "type": "text_to_video",
-      "estimated_duration": 2.5,
-      "ai_video_prompt": "Cinematic TikTok commercial video, close up shot with static. clock and dining table, clock ticking quickly to emphasize 1 minute, transitioning to an empty dining table waiting for food. Environment: modern home dining area. Lighting: bright indoor lighting. Atmosphere: relieved, hopeful. Style: realistic commercial, 4k ultra detailed, photorealistic.",
+      "estimated_duration": 2,
+      "ai_video_prompt": "Cinematic TikTok commercial video, medium shot with pan down. Empty fridge, person opening fridge disappointedly. Environment: kitchen. Lighting: natural lighting. Atmosphere: . Style: realistic commercial, 4k ultra detailed, photorealistic.",
       "negative_prompt": "blurry, low quality, distorted anatomy, morphing artifacts, extra limbs, watermark, amateur video, flickering",
       "camera_control": {
-        "movement": "static",
-        "angle": "high_angle"
+        "movement": "pan down",
+        "angle": "eye_level"
       },
       "notes": "Text-to-Video generation or stock/meme injection"
     },
@@ -33,39 +33,39 @@
       "purpose": "solution",
       "type": "image_to_video",
       "estimated_duration": 3.5,
-      "ai_video_prompt": "Cinematic product commercial video, close up shot with slow push in. knife slicing cleanly through the golden crispy skin of the whole chicken. In kitchen counter with wooden cutting board, soft studio food lighting, premium food commercial, 4k ultra high resolution, food commercial aesthetics, realistic fluid motion, no distortion.",
+      "ai_video_prompt": "Cinematic product commercial video, close up shot with pan up. Cinematic presentation of the chicken dish, steam rising. In , natural lighting, realistic commercial, 4k ultra high resolution, food commercial aesthetics, realistic fluid motion, no distortion.",
       "negative_prompt": "blurry, low quality, distorted anatomy, morphing artifacts, extra limbs, watermark, amateur video, flickering",
       "camera_control": {
-        "movement": "slow push in",
+        "movement": "pan up",
         "angle": "eye_level"
       },
-      "notes": "Input Reference Image required: ['ga_u_muoi_image_01']"
+      "notes": "Input Reference Image required: []"
     },
     {
       "scene_id": "scene_04",
       "purpose": "benefit",
-      "type": "text_to_video",
+      "type": "image_to_video",
       "estimated_duration": 3,
-      "ai_video_prompt": "Cinematic TikTok commercial video, wide shot with pan right. happy family, family sitting around the dinner table, smiling and enjoying dinner. Environment: warm home dining room. Lighting: warm dinner lighting. Atmosphere: happy, connected. Style: realistic commercial, 4k ultra detailed, photorealistic.",
+      "ai_video_prompt": "Cinematic product commercial video, macro shot shot with zoom in. Macro shot of crispy chicken skin, juicy meat. In , natural lighting, realistic commercial, 4k ultra high resolution, food commercial aesthetics, realistic fluid motion, no distortion.",
       "negative_prompt": "blurry, low quality, distorted anatomy, morphing artifacts, extra limbs, watermark, amateur video, flickering",
       "camera_control": {
-        "movement": "pan right",
+        "movement": "zoom in",
         "angle": "eye_level"
       },
-      "notes": "Text-to-Video generation or stock/meme injection"
+      "notes": "Input Reference Image required: []"
     },
     {
       "scene_id": "scene_05",
       "purpose": "cta",
       "type": "image_to_video",
-      "estimated_duration": 3,
-      "ai_video_prompt": "Cinematic product commercial video, product hero shot with slow pull out. product packaging centered on screen with brand logo appearing prominently. In clean studio background, bright studio lighting, premium product commercial, 4k ultra high resolution, food commercial aesthetics, realistic fluid motion, no distortion.",
+      "estimated_duration": 3.5,
+      "ai_video_prompt": "Cinematic product commercial video, medium shot with slow push in. Product packaging with neon CTA pop-up text. In , natural lighting, realistic commercial, 4k ultra high resolution, food commercial aesthetics, realistic fluid motion, no distortion.",
       "negative_prompt": "blurry, low quality, distorted anatomy, morphing artifacts, extra limbs, watermark, amateur video, flickering",
       "camera_control": {
-        "movement": "slow pull out",
+        "movement": "slow push in",
         "angle": "eye_level"
       },
-      "notes": "Input Reference Image required: ['ga_u_muoi_packaging', 'https://bepsachviet.com/wp-content/uploads/2023/01/GA-U-MUOI-1.png', 'logo']"
+      "notes": "Input Reference Image required: []"
     }
   ]
 }
