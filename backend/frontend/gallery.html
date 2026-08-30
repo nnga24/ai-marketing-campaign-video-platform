@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Video Creator | Thư viện</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=2">
+    <style>
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+            padding: 20px 0;
+        }
+        .video-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+        }
+        .video-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(56, 189, 248, 0.5);
+        }
+        .video-player {
+            width: 100%;
+            aspect-ratio: 9/16;
+            background: #000;
+            object-fit: contain;
+        }
+        .video-info {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .video-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            margin: 0;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
+        .btn-download {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-download:hover {
+            background: var(--secondary-color);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            color: #94a3b8;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">AIVideo</div>
+            <ul class="nav-links">
+                <li class="active">🎬 Thư viện Video</li>
+            </ul>
+            
+            <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <a href="/" style="color: white; text-decoration: none; display: flex; align-items: center; gap: 10px; font-weight: bold; padding: 10px;">
+                    ⬅️ Tạo Video Mới
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header>
+                <h1>Thư viện Video đã render</h1>
+            </header>
+
+            <div id="loading" class="empty-state">Đang tải dữ liệu...</div>
+            <div id="gallery-container" class="gallery-grid" style="display: none;"></div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            try {
+                const res = await fetch("/api/projects/list");
+                const data = await res.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                const container = document.getElementById('gallery-container');
+                container.style.display = 'grid';
+                
+                if (!data.projects || data.projects.length === 0) {
+                    container.style.display = 'block';
+                    container.innerHTML = '<div class="empty-state">Chưa có video nào được render. Hãy tạo video đầu tiên của bạn!</div>';
+                    return;
+                }
+                
+                data.projects.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = 'video-card glass';
+                    card.innerHTML = `
+                        <video class="video-player" src="/${p.video_uri}" controls preload="metadata"></video>
+                        <div class="video-info">
+                            <h3 class="video-title" title="${p.project_id}">${p.project_id}</h3>
+                            <a href="/${p.video_uri}" download="${p.project_id}_tiktok.mp4" class="btn-download">Tải xuống</a>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (err) {
+                document.getElementById('loading').innerText = "Lỗi khi tải danh sách video: " + err.message;
+            }
+        });
+    </script>
+</body>
+</html>
