@@ -1,0 +1,37 @@
+[
+  {
+    "scene_id": "scene_01",
+    "audio_uri": "storage/cha_ca_thac_lac_tuoi/voice/scene_01.mp3",
+    "image_uri": "storage/cha_ca_thac_lac_tuoi/inputs/CHA-CA-THAC-LAC-TUOI-1.png",
+    "video_uri": "storage/cha_ca_thac_lac_tuoi/scenes/scene_01.mp4",
+    "text": "Thèm chả cá thác lác dai ngon chuẩn vị Miền Tây mà sợ mua lầm hàng pha bột?"
+  },
+  {
+    "scene_id": "scene_02",
+    "audio_uri": "storage/cha_ca_thac_lac_tuoi/voice/scene_02.mp3",
+    "image_uri": "storage/cha_ca_thac_lac_tuoi/inputs/CHA-CA-THAC-LAC-TUOI-2.png",
+    "video_uri": "storage/cha_ca_thac_lac_tuoi/scenes/scene_02.mp4",
+    "text": "Tự làm ở nhà thì quết mỏi rã tay, mua ngoài chợ lại lo hàn the, hóa chất!"
+  },
+  {
+    "scene_id": "scene_03",
+    "audio_uri": "storage/cha_ca_thac_lac_tuoi/voice/scene_03.mp3",
+    "image_uri": "storage/cha_ca_thac_lac_tuoi/inputs/CHA-CA-THAC-LAC-TUOI-1.png",
+    "video_uri": "storage/cha_ca_thac_lac_tuoi/scenes/scene_03.mp4",
+    "text": "Có ngay Chả Cá Thác Lác Hậu Giang Bếp Sạch Việt, chuẩn OCOP 4 sao, 100% cá tươi nguyên chất!"
+  },
+  {
+    "scene_id": "scene_04",
+    "audio_uri": "storage/cha_ca_thac_lac_tuoi/voice/scene_04.mp3",
+    "image_uri": "storage/cha_ca_thac_lac_tuoi/inputs/CHA-CA-THAC-LAC-TUOI-2.png",
+    "video_uri": "storage/cha_ca_thac_lac_tuoi/scenes/scene_04.mp4",
+    "text": "Mở bao là chế biến ngay! Chả dai ngon tự nhiên, ngọt thanh, chiên hay nấu lẩu đều đậm vị."
+  },
+  {
+    "scene_id": "scene_05",
+    "audio_uri": "storage/cha_ca_thac_lac_tuoi/voice/scene_05.mp3",
+    "image_uri": "storage/cha_ca_thac_lac_tuoi/inputs/CHA-CA-THAC-LAC-TUOI-1.png",
+    "video_uri": "storage/cha_ca_thac_lac_tuoi/scenes/scene_05.mp4",
+    "text": "Bấm ngay vào giỏ hàng góc trái để nhận ưu đãi chả cá tươi OCOP Hậu Giang hôm nay nha!"
+  }
+]

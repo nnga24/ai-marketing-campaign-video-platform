@@ -4,7 +4,7 @@
 backend/.env
 
 # Local Storage (Large files, audio, video, images)
-backend/storage/
+# backend/storage/
 
 # Python cache & build
 __pycache__/

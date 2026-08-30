@@ -1,0 +1,54 @@
+{
+  "scenes": [
+    {
+      "id": "scene_01",
+      "visual": {
+        "subject": "Extreme close-up macro shot of crispy mahogany-brown sliced salt-cured pig ear dipping into spicy red chili sauce, glossy texture, mouth-watering food detail",
+        "environment": "Rustic wooden table, warm bright studio lighting, TikTok food photography style"
+      },
+      "audio": {
+        "voice": "Thèm món gì giòn rụm sần sật lai rai tối nay mà làm biếng vào bếp?"
+      }
+    },
+    {
+      "id": "scene_02",
+      "visual": {
+        "subject": "Exhausted young office worker sitting at a kitchen table, looking stressed at a dirty sink and messy raw ingredients",
+        "environment": "Dimly lit modern apartment kitchen, late evening atmosphere"
+      },
+      "audio": {
+        "voice": "Ngại sơ chế tai heo tươi vì hôi, bẩn lại tốn cả tiếng đồng hồ?"
+      }
+    },
+    {
+      "id": "scene_03",
+      "visual": {
+        "subject": "Hands taking out a vacuum-sealed package of herbal salt-cured pig ear and quickly slicing it into perfectly uniform crunchy slices on a wooden board",
+        "environment": "Clean minimalist kitchen counter, bright high-key daylighting"
+      },
+      "audio": {
+        "voice": "Có ngay Tai Heo Ủ Muối Thảo Mộc chín sẵn, rã đông thái lát ăn liền trong 3 phút!"
+      }
+    },
+    {
+      "id": "scene_04",
+      "visual": {
+        "subject": "Group of happy young friends laughing, picking up crunchy pig ear slices with chopsticks, enjoying with cold beverages",
+        "environment": "Cozy home party setting, warm welcoming indoor lighting"
+      },
+      "audio": {
+        "voice": "Sụn giòn sần sật, thơm đậm đà xì dầu thảo mộc, nhậu hay ăn cùng cơm nóng đều mê!"
+      }
+    },
+    {
+      "id": "scene_05",
+      "visual": {
+        "subject": "A beautiful packshot of Tai Heo Ủ Muối package beside a full plate of sliced pig ears, with a hand pointing towards the lower left corner",
+        "environment": "Vibrant TikTok Shop promotional background with soft shadows and high contrast"
+      },
+      "audio": {
+        "voice": "Bấm vào giỏ hàng góc trái mua ngay Tai Heo Ủ Muối giòn sần sật để nhận ưu đãi hôm nay!"
+      }
+    }
+  ]
+}
