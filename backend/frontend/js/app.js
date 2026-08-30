@@ -4,24 +4,161 @@ let projectId = "";
 let currentBusinessData = null;
 let currentStoryboard = null;
 
+// Giao diện Loader
+function showLoader(text) {
+    const loader = document.getElementById('global-loader');
+    if (loader) {
+        loader.classList.remove('hidden');
+        document.getElementById('loader-text').innerText = text;
+    }
+}
+function hideLoader() {
+    const loader = document.getElementById('global-loader');
+    if (loader) {
+        loader.classList.add('hidden');
+    }
+}
+
+// Hàm mã hóa tên thành slug
+function slugify(text) {
+    return text.toString().toLowerCase()
+        .replace(/á|à|ả|ã|ạ|ă|ắ|ằ|ẳ|ẵ|ặ|â|ấ|ầ|ẩ|ẫ|ậ/g, 'a')
+        .replace(/é|è|ẻ|ẽ|ẹ|ê|ế|ề|ể|ễ|ệ/g, 'e')
+        .replace(/i|í|ì|ỉ|ĩ|ị/g, 'i')
+        .replace(/ó|ò|ỏ|õ|ọ|ô|ố|ồ|ổ|ỗ|ộ|ơ|ớ|ờ|ở|ỡ|ợ/g, 'o')
+        .replace(/ú|ù|ủ|ũ|ụ|ư|ứ|ừ|ử|ữ|ự/g, 'u')
+        .replace(/ý|ỳ|ỷ|ỹ|ỵ/g, 'y')
+        .replace(/đ/g, 'd')
+        .replace(/\s+/g, '_')
+        .replace(/[^\w\-]+/g, '')
+        .replace(/\_\_+/g, '_')
+        .replace(/^_/, '')
+        .replace(/_$/, '');
+}
+
+// Load danh sách project cũ
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        const res = await fetch("/api/projects/list");
+        const data = await res.json();
+        if (data.projects) {
+            const datalist = document.getElementById('existing-projects');
+            data.projects.forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.project_id;
+                datalist.appendChild(option);
+            });
+        }
+    } catch (err) {
+        console.error("Failed to load projects", err);
+    }
+    
+    // Load dữ liệu cũ từ localStorage
+    const savedName = localStorage.getItem('saved_project_name');
+    const savedInfo = localStorage.getItem('saved_product_info');
+    
+    if (savedName) {
+        const projectNameInput = document.getElementById('project-name');
+        if (projectNameInput) {
+            projectNameInput.value = savedName;
+            document.getElementById('project-id-preview').innerText = slugify(savedName);
+        }
+    }
+    if (savedInfo) {
+        const infoInput = document.getElementById('product-info');
+        if (infoInput) infoInput.value = savedInfo;
+    }
+
+    // Live update preview và lưu localStorage
+    const projectNameInput = document.getElementById('project-name');
+    if (projectNameInput) {
+        projectNameInput.addEventListener('input', (e) => {
+            const val = e.target.value;
+            const slug = slugify(val);
+            document.getElementById('project-id-preview').innerText = slug || 'chua_nhap_ten';
+            localStorage.setItem('saved_project_name', val);
+        });
+    }
+    
+    const productInfoInput = document.getElementById('product-info');
+    if (productInfoInput) {
+        productInfoInput.addEventListener('input', (e) => {
+            localStorage.setItem('saved_product_info', e.target.value);
+        });
+    }
+});
+
 // Điều hướng giao diện
 function goToStep(step) {
     document.querySelectorAll('.step-section').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav li').forEach(el => el.classList.remove('active'));
     document.getElementById(`step-${step}`).classList.add('active');
     document.getElementById(`nav-step-${step}`).classList.add('active');
+    
+    // Hiển thị nút "Xem Kịch bản đã có" nếu đã có data
+    if(step === 2 && currentStoryboard) {
+        document.getElementById('btn-skip-to-3').style.display = 'block';
+    } else {
+        document.getElementById('btn-skip-to-3').style.display = 'none';
+    }
+}
+
+// Xử lý nút Quay lại & Điều hướng tự do
+document.getElementById('btn-back-1')?.addEventListener('click', () => goToStep(1));
+document.getElementById('btn-back-2')?.addEventListener('click', () => goToStep(2));
+document.getElementById('btn-skip-to-3')?.addEventListener('click', () => goToStep(3));
+document.getElementById('btn-back-1-new')?.addEventListener('click', () => {
+    document.getElementById('project-name').value = '';
+    document.getElementById('product-info').value = '';
+    document.getElementById('product-file').value = '';
+    goToStep(1);
+});
+
+// Cho phép click thẳng vào thanh bên trái để nhảy bước (nếu thích)
+document.querySelectorAll('.nav li').forEach((el, index) => {
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', () => goToStep(index + 1));
+});
+
+function fillBusinessDataToUI() {
+    if (!currentBusinessData) return;
+    
+    // Product
+    const prod = currentBusinessData.product || {};
+    document.getElementById('bd-product-name').value = prod.name || "";
+    document.getElementById('bd-product-desc').value = prod.description || "";
+    document.getElementById('bd-product-features').value = (prod.features || []).join('\n');
+    document.getElementById('bd-product-benefits').value = (prod.benefits || []).join('\n');
+    document.getElementById('bd-product-price').value = prod.price || "";
+    document.getElementById('bd-product-usp').value = prod.usp || "";
+    
+    // Audience
+    const aud = currentBusinessData.audience || {};
+    document.getElementById('bd-audience-age').value = aud.age || "";
+    document.getElementById('bd-audience-job').value = aud.occupation || "";
+    document.getElementById('bd-audience-pain').value = (aud.pain_points || []).join('\n');
+    document.getElementById('bd-audience-needs').value = (aud.needs || []).join(', ');
+    document.getElementById('bd-audience-hobbies').value = (aud.hobbies || []).join(', ');
+    
+    // Marketing & Brand
+    const mkt = currentBusinessData.marketing || {};
+    const brnd = currentBusinessData.brand || {};
+    document.getElementById('bd-marketing-platform').value = mkt.platform || "TikTok";
+    document.getElementById('bd-marketing-duration').value = mkt.duration || "15-30s";
+    document.getElementById('bd-marketing-objective').value = mkt.objective || "";
+    document.getElementById('bd-marketing-cta').value = mkt.cta || "";
+    document.getElementById('bd-brand-tone').value = brnd.tone_of_voice || "";
 }
 
 // BƯỚC 1: SINH BUSINESS DATA
 document.getElementById('btn-init').addEventListener('click', async () => {
-    projectId = document.getElementById('project-id').value.trim();
+    const rawName = document.getElementById('project-name').value.trim();
+    projectId = slugify(rawName);
     const info = document.getElementById('product-info').value.trim();
     
-    if(!projectId || !info) return alert("Vui lòng điền đủ mã dự án và thông tin sản phẩm!");
+    if(!projectId || !info) return alert("Vui lòng điền đủ tên dự án và thông tin sản phẩm!");
     
-    const btn = document.getElementById('btn-init');
-    btn.innerText = "⏳ Đang phân tích bằng Gemini...";
-    btn.disabled = true;
+    showLoader("🧠 Đang dùng AI Gemini phân tích dữ liệu kinh doanh...\nVui lòng chờ trong giây lát ⏳");
 
     try {
         // Khởi tạo thư mục
@@ -53,35 +190,50 @@ document.getElementById('btn-init').addEventListener('click', async () => {
         if(!res.ok) throw new Error("Lỗi API Gemini");
         
         currentBusinessData = await res.json();
-        
-        // Đổ data ra màn hình Bước 2
-        document.getElementById('bd-target').value = currentBusinessData.target_audience || "";
-        document.getElementById('bd-pain').value = (currentBusinessData.pain_points || []).join('\n');
-        document.getElementById('bd-core').value = currentBusinessData.core_message || "";
+        fillBusinessDataToUI();
         
         goToStep(2);
     } catch(err) {
         alert(err.message);
     } finally {
-        btn.innerText = "Bắt đầu Phân tích AI";
-        btn.disabled = false;
+        hideLoader();
     }
 });
 
 // RESUME CŨ
 document.getElementById('btn-resume').addEventListener('click', async () => {
-    projectId = document.getElementById('project-id').value.trim();
-    if(!projectId) return alert("Vui lòng điền mã dự án!");
+    const rawName = document.getElementById('project-name').value.trim();
+    projectId = slugify(rawName);
+    if(!projectId) return alert("Vui lòng điền tên dự án cần tiếp tục!");
     
+    showLoader("Đang khôi phục dữ liệu dự án...\nVui lòng chờ trong giây lát ⏳");
     try {
-        const res = await fetch(`/storage/${projectId}/storyboard.json`);
-        if(!res.ok) throw new Error("Dự án này chưa có Kịch bản hoặc đã bị xóa!");
+        let hasData = false;
         
-        currentStoryboard = await res.json();
-        renderStoryboard();
-        goToStep(3);
+        // 1. Fetch Business Data
+        const resBd = await fetch(`/storage/${projectId}/business_data.json`);
+        if(resBd.ok) {
+            currentBusinessData = await resBd.json();
+            fillBusinessDataToUI();
+            hasData = true;
+        }
+
+        // 2. Fetch Storyboard
+        const resSb = await fetch(`/storage/${projectId}/storyboard.json`);
+        if(resSb.ok) {
+            currentStoryboard = await resSb.json();
+            renderStoryboard();
+            hasData = true;
+        }
+        
+        if(!hasData) throw new Error("Dự án này chưa có Dữ liệu hoặc đã bị xóa!");
+        
+        alert("Đã khôi phục thành công! Hãy xem lại từng bước.");
+        goToStep(2);
     } catch (e) {
         alert(e.message);
+    } finally {
+        hideLoader();
     }
 });
 
@@ -92,9 +244,34 @@ document.getElementById('btn-gen-storyboard').addEventListener('click', async ()
     btn.disabled = true;
 
     // Lấy data mới nhất nếu người dùng có sửa chữa
-    currentBusinessData.target_audience = document.getElementById('bd-target').value;
-    currentBusinessData.pain_points = document.getElementById('bd-pain').value.split('\n');
-    currentBusinessData.core_message = document.getElementById('bd-core').value;
+    currentBusinessData = {
+        product: {
+            name: document.getElementById('bd-product-name').value,
+            description: document.getElementById('bd-product-desc').value,
+            features: document.getElementById('bd-product-features').value.split('\n').map(x=>x.trim()).filter(x=>x),
+            benefits: document.getElementById('bd-product-benefits').value.split('\n').map(x=>x.trim()).filter(x=>x),
+            price: document.getElementById('bd-product-price').value,
+            usp: document.getElementById('bd-product-usp').value
+        },
+        audience: {
+            age: document.getElementById('bd-audience-age').value,
+            occupation: document.getElementById('bd-audience-job').value,
+            pain_points: document.getElementById('bd-audience-pain').value.split('\n').map(x=>x.trim()).filter(x=>x),
+            needs: document.getElementById('bd-audience-needs').value.split(',').map(x=>x.trim()).filter(x=>x),
+            hobbies: document.getElementById('bd-audience-hobbies').value.split(',').map(x=>x.trim()).filter(x=>x)
+        },
+        marketing: {
+            platform: document.getElementById('bd-marketing-platform').value,
+            duration: document.getElementById('bd-marketing-duration').value,
+            objective: document.getElementById('bd-marketing-objective').value,
+            cta: document.getElementById('bd-marketing-cta').value
+        },
+        brand: {
+            tone_of_voice: document.getElementById('bd-brand-tone').value
+        }
+    };
+
+    showLoader("🎬 Đang dùng AI Đạo diễn viết kịch bản 5 cảnh...\nViệc này có thể tốn khoảng 10-15 giây ⏳");
 
     try {
         const res = await fetch(`${API_BASE}/generate/storyboard`, {
@@ -113,6 +290,7 @@ document.getElementById('btn-gen-storyboard').addEventListener('click', async ()
     } finally {
         btn.innerText = "Duyệt & Viết Kịch Bản";
         btn.disabled = false;
+        hideLoader();
     }
 });
 

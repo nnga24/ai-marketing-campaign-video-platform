@@ -39,12 +39,30 @@ class GeminiService:
         
         TRẢ VỀ ĐÚNG 1 FILE JSON THEO CẤU TRÚC SAU (KHÔNG KÈM TEXT GIẢI THÍCH):
         {{
-          "target_audience": "Mô tả 1 câu tệp khách hàng mục tiêu",
-          "pain_points": [
-            "Nỗi đau 1",
-            "Nỗi đau 2"
-          ],
-          "core_message": "Thông điệp cốt lõi (1 câu)"
+          "product": {{
+            "name": "Tên sản phẩm",
+            "description": "Mô tả",
+            "features": ["Tính năng 1", "Tính năng 2"],
+            "benefits": ["Lợi ích 1", "Lợi ích 2"],
+            "price": "Giá hoặc phân khúc",
+            "usp": "Điểm bán hàng độc nhất"
+          }},
+          "brand": {{
+            "tone_of_voice": "Tone giọng điệu (VD: Hài hước, Chuyên gia...)"
+          }},
+          "audience": {{
+            "age": "Độ tuổi",
+            "occupation": "Nghề nghiệp",
+            "pain_points": ["Nỗi đau 1", "Nỗi đau 2"],
+            "needs": ["Nhu cầu 1"],
+            "hobbies": ["Sở thích 1"]
+          }},
+          "marketing": {{
+            "objective": "Mục tiêu (Sales, Awareness...)",
+            "platform": "TikTok",
+            "duration": "15-30s",
+            "cta": "Lời kêu gọi hành động"
+          }}
         }}
         """
         contents = [prompt]

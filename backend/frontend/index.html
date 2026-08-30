@@ -8,6 +8,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div id="global-loader" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+        <div class="spinner" style="width: 50px; height: 50px; border-width: 4px;"></div>
+        <h3 id="loader-text" style="color: white; margin-top: 20px; font-weight: 600; text-align: center; white-space: pre-line;">Đang xử lý...</h3>
+    </div>
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar">
@@ -33,17 +37,19 @@
                 <h2>Khởi tạo Dự án mới</h2>
                 <div class="card glass">
                     <div class="form-group">
-                        <label>Mã dự án (Tên thư mục không dấu)</label>
-                        <input type="text" id="project-id" placeholder="vd: ga_u_muoi" value="ga_u_muoi">
+                        <label>Tên dự án / Chiến dịch (vd: Gà ủ muối)</label>
+                        <input type="text" id="project-name" placeholder="vd: Gà ủ muối" list="existing-projects">
+                        <datalist id="existing-projects"></datalist>
+                        <small style="color:#64748b; margin-top:5px; display:block;">Mã hệ thống: <span id="project-id-preview" style="color:var(--primary-color);">chua_nhap_ten</span></small>
                     </div>
                     <div class="form-group">
-                        <label>Sản phẩm của bạn là gì?</label>
-                        <textarea id="product-info" rows="3" placeholder="vd: Gà ủ muối thảo mộc, ăn liền, phù hợp văn phòng..."></textarea>
+                        <label>Mô tả chi tiết sản phẩm (Cung cấp context càng nhiều càng tốt)</label>
+                        <textarea id="product-info" rows="3" placeholder="Cung cấp càng nhiều bối cảnh càng tốt (Nguồn gốc, Thành phần, Công dụng, USP nổi bật, Giá bán, Tệp khách hàng mục tiêu...) để AI viết kịch bản thật hay và sát thực tế."></textarea>
                     </div>
                     <div class="form-group">
-                        <label>Upload Ảnh/Video sản phẩm thật (Tùy chọn)</label>
+                        <label>Tài nguyên Hình ảnh / Video thực tế (Tùy chọn nhưng khuyến khích)</label>
                         <input type="file" id="product-file" accept="image/*,video/*" multiple>
-                        <small style="color:#64748b; margin-top:5px; display:block;">Chọn nhiều file để AI phân tích sản phẩm chính xác nhất.</small>
+                        <small style="color:#64748b; margin-top:5px; display:block;">Chọn các file ảnh gốc để hệ thống ưu tiên đưa vào luồng tạo Video thay vì để AI tự động vẽ.</small>
                     </div>
                     <div style="display: flex; gap: 10px;">
                         <button id="btn-init" class="btn primary">Bắt đầu Phân tích AI</button>
@@ -55,20 +61,103 @@
             <!-- Step 2 -->
             <section id="step-2" class="step-section">
                 <h2>Duyệt Business Data</h2>
-                <div class="card glass">
-                    <div class="form-group">
-                        <label>Tệp Khách Hàng (AI đã nhận diện)</label>
-                        <input type="text" id="bd-target" />
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <!-- Card 1: Product -->
+                    <div class="card glass">
+                        <h3 style="margin-bottom: 15px; color: var(--primary-color);">📦 Thông tin Sản phẩm</h3>
+                        <div class="form-group">
+                            <label>Tên sản phẩm</label>
+                            <input type="text" id="bd-product-name" />
+                        </div>
+                        <div class="form-group">
+                            <label>Mô tả ngắn</label>
+                            <textarea id="bd-product-desc" rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Tính năng (Mỗi dòng 1 ý)</label>
+                            <textarea id="bd-product-features" rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Lợi ích (Mỗi dòng 1 ý)</label>
+                            <textarea id="bd-product-benefits" rows="2"></textarea>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="form-group">
+                                <label>Mức giá / Phân khúc</label>
+                                <input type="text" id="bd-product-price" />
+                            </div>
+                            <div class="form-group">
+                                <label>USP (Điểm nổi bật)</label>
+                                <input type="text" id="bd-product-usp" />
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Nỗi đau khách hàng (Pain Points)</label>
-                        <textarea id="bd-pain" rows="3"></textarea>
+
+                    <!-- Card 2 & 3: Audience + Marketing -->
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <div class="card glass">
+                            <h3 style="margin-bottom: 15px; color: #f472b6;">👥 Khách hàng Mục tiêu</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div class="form-group">
+                                    <label>Độ tuổi</label>
+                                    <input type="text" id="bd-audience-age" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Nghề nghiệp</label>
+                                    <input type="text" id="bd-audience-job" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Nỗi đau (Pain points)</label>
+                                <textarea id="bd-audience-pain" rows="2"></textarea>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div class="form-group">
+                                    <label>Nhu cầu</label>
+                                    <input type="text" id="bd-audience-needs" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Sở thích</label>
+                                    <input type="text" id="bd-audience-hobbies" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card glass">
+                            <h3 style="margin-bottom: 15px; color: #4ade80;">🎯 Chiến dịch & Thương hiệu</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div class="form-group">
+                                    <label>Nền tảng</label>
+                                    <input type="text" id="bd-marketing-platform" value="TikTok" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Mục tiêu (Objective)</label>
+                                    <input type="text" id="bd-marketing-objective" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Thời lượng</label>
+                                    <input type="text" id="bd-marketing-duration" value="15-30s" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Tone giọng</label>
+                                    <input type="text" id="bd-brand-tone" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Call to Action (CTA)</label>
+                                <input type="text" id="bd-marketing-cta" />
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Thông điệp cốt lõi</label>
-                        <input type="text" id="bd-core" />
+                </div>
+
+                <div class="card glass" style="display: flex; gap: 10px; justify-content: space-between; align-items: center;">
+                    <button id="btn-back-1" class="btn secondary" style="background: transparent; border: 1px solid #64748b; color: #94a3b8; margin: 0;">⬅ Quay lại</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="btn-skip-to-3" class="btn secondary" style="display: none; background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); margin: 0; padding: 15px 20px;">Xem Kịch bản đã có ➡</button>
+                        <button id="btn-gen-storyboard" class="btn primary" style="margin: 0; padding: 15px 40px; font-size: 16px;">Viết Kịch Bản Mới 🚀</button>
                     </div>
-                    <button id="btn-gen-storyboard" class="btn primary">Duyệt & Viết Kịch Bản</button>
                 </div>
             </section>
             
@@ -93,7 +182,10 @@
                 </div>
                 
                 <div id="storyboard-container" class="scroll-area"></div>
-                <button id="btn-gen-assets" class="btn primary">Chốt Kịch Bản & Khởi tạo Media</button>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button id="btn-back-2" class="btn secondary" style="background: transparent; border: 1px solid #64748b; color: #94a3b8;">⬅ Quay lại</button>
+                    <button id="btn-gen-assets" class="btn primary">Chốt Kịch Bản & Khởi tạo Media</button>
+                </div>
             </section>
 
             <!-- Step 4 -->
@@ -106,6 +198,7 @@
                 <div id="final-video-container" class="hidden">
                     <h3 style="margin-bottom: 1rem; color: #4ade80;">✅ Hoàn tất! Đây là Video của bạn:</h3>
                     <video id="final-video" controls class="final-video" autoplay loop></video>
+                    <button id="btn-back-1-new" class="btn secondary" style="margin-top: 20px; width: 100%;">Tạo Dự án Mới</button>
                 </div>
             </section>
         </main>
