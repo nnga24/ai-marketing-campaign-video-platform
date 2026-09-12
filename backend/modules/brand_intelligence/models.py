@@ -1,11 +1,6 @@
 import uuid
+
 from sqlalchemy import ForeignKey, String, Text, UniqueConstraint, Uuid
-from modules.common.mixins import (
-    LifecycleMixin,
-    TimestampMixin,
-    UUIDPrimaryKeyMixin,
-    VersionedArtifactMixin,
-)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database.base import Base
@@ -13,6 +8,7 @@ from modules.common.mixins import (
     LifecycleMixin,
     TimestampMixin,
     UUIDPrimaryKeyMixin,
+    VersionedArtifactMixin,
 )
 
 
