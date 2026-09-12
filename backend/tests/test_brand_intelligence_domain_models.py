@@ -1,12 +1,14 @@
 from sqlalchemy import UniqueConstraint
 
 from modules.brand_intelligence.enums import (
+    BrandFactType,
     BrandRuleType,
     FactVerificationStatus,
     ProductFactType,
 )
 from modules.brand_intelligence.models import (
     Brand,
+    BrandFact,
     BrandProfile,
     BrandRule,
     BrandVoice,
@@ -441,3 +443,39 @@ def test_brand_rule_type_values():
         "PREFERRED",
         "DISCOURAGED",
     ]
+
+def test_brand_fact_table_contract():
+    columns = BrandFact.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "brand_profile_id",
+        "fact_type",
+        "statement",
+        "verification_status",
+        "created_at",
+        "updated_at",
+        "source_type",
+    }
+
+    assert columns["brand_profile_id"].nullable is False
+    assert columns["fact_type"].nullable is False
+    assert columns["statement"].nullable is False
+    assert columns["verification_status"].nullable is False
+    assert columns["source_type"].nullable is False
+
+    brand_profile_fk = next(
+        iter(columns["brand_profile_id"].foreign_keys)
+    )
+
+    assert brand_profile_fk.target_fullname == "brand_profiles.id"
+    assert brand_profile_fk.ondelete == "CASCADE"
+
+
+def test_brand_fact_requires_explicit_source_and_verification():
+    columns = BrandFact.__table__.columns
+
+    assert columns["source_type"].default is None
+    assert columns["source_type"].server_default is None
+    assert columns["verification_status"].default is None
+    assert columns["verification_status"].server_default is None
