@@ -4,10 +4,19 @@ from sqlalchemy import ForeignKey, String, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database.base import Base
-from modules.common.mixins import TimestampMixin, UUIDPrimaryKeyMixin
+from modules.common.mixins import (
+    LifecycleMixin,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+)
 
 
-class Project(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class Project(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    LifecycleMixin,
+    Base,
+):
     __tablename__ = "projects"
 
     __table_args__ = (
