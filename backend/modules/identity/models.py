@@ -1,13 +1,21 @@
-from sqlalchemy import Boolean, String, text
+import uuid
+
+from sqlalchemy import (
+    Boolean,
+    Enum as SAEnum,
+    ForeignKey,
+    String,
+    UniqueConstraint,
+    Uuid,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database.base import Base
 from modules.common.mixins import TimestampMixin, UUIDPrimaryKeyMixin
-
-import uuid
-
-from sqlalchemy import Boolean, Enum as SAEnum, ForeignKey, String, UniqueConstraint, Uuid, text
 from modules.identity.enums import WorkspaceRole
+
+
 class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "users"
 
