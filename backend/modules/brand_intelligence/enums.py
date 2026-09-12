@@ -5,3 +5,11 @@ class FactVerificationStatus(str, Enum):
     CONFIRMED = "CONFIRMED"
     PROPOSED = "PROPOSED"
     UNKNOWN = "UNKNOWN"
+
+class ProductFactType(str, Enum):
+    DESCRIPTION = "DESCRIPTION"
+    FEATURE = "FEATURE"
+    INGREDIENT = "INGREDIENT"
+    SPECIFICATION = "SPECIFICATION"
+    USAGE = "USAGE"
+    AVAILABILITY = "AVAILABILITY"

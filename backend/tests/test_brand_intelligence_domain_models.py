@@ -1,7 +1,15 @@
 from sqlalchemy import UniqueConstraint
 
-from modules.brand_intelligence.enums import FactVerificationStatus
-from modules.brand_intelligence.models import Brand, BrandProfile, Product
+from modules.brand_intelligence.enums import (
+    FactVerificationStatus,
+    ProductFactType,
+)
+from modules.brand_intelligence.models import (
+    Brand,
+    BrandProfile,
+    Product,
+    ProductTruth,
+)
 from modules.common.enums import EntityStatus
 
 
@@ -12,6 +20,16 @@ def test_fact_verification_status_values():
         "UNKNOWN",
     ]
 
+
+def test_product_fact_type_values():
+    assert [fact_type.value for fact_type in ProductFactType] == [
+        "DESCRIPTION",
+        "FEATURE",
+        "INGREDIENT",
+        "SPECIFICATION",
+        "USAGE",
+        "AVAILABILITY",
+    ]
 
 def test_brand_table_contract():
     columns = Brand.__table__.columns
@@ -171,3 +189,61 @@ def test_product_defaults_to_draft():
 
     assert status_column.default.arg == EntityStatus.DRAFT
     assert str(status_column.server_default.arg) == "DRAFT"
+
+def test_product_truth_table_contract():
+    columns = ProductTruth.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "product_id",
+        "parent_version_id",
+        "created_at",
+        "updated_at",
+        "status",
+        "version",
+        "schema_version",
+        "is_outdated",
+    }
+
+    assert columns["product_id"].nullable is False
+    assert columns["parent_version_id"].nullable is True
+
+    product_fk = next(iter(columns["product_id"].foreign_keys))
+    parent_fk = next(iter(columns["parent_version_id"].foreign_keys))
+
+    assert product_fk.target_fullname == "products.id"
+    assert product_fk.ondelete == "CASCADE"
+
+    assert parent_fk.target_fullname == "product_truths.id"
+    assert parent_fk.ondelete == "SET NULL"
+
+
+def test_product_truth_version_is_unique_per_product():
+    unique_constraints = [
+        constraint
+        for constraint in ProductTruth.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    ]
+
+    assert any(
+        constraint.name == "uq_product_truths_product_version"
+        and [column.name for column in constraint.columns]
+        == ["product_id", "version"]
+        for constraint in unique_constraints
+    )
+
+
+def test_product_truth_metadata_defaults():
+    columns = ProductTruth.__table__.columns
+
+    assert columns["status"].default.arg == EntityStatus.DRAFT
+    assert str(columns["status"].server_default.arg) == "DRAFT"
+
+    assert columns["version"].default.arg == 1
+    assert str(columns["version"].server_default.arg) == "1"
+
+    assert columns["schema_version"].default.arg == 1
+    assert str(columns["schema_version"].server_default.arg) == "1"
+
+    assert columns["is_outdated"].default.arg is False
+    assert str(columns["is_outdated"].server_default.arg) == "false"

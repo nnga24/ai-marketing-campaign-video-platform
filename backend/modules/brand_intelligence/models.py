@@ -9,8 +9,8 @@ from modules.common.mixins import (
     TimestampMixin,
     UUIDPrimaryKeyMixin,
     VersionedArtifactMixin,
+    VersionMetadataMixin,
 )
-
 
 class Brand(
     UUIDPrimaryKeyMixin,
@@ -110,4 +110,34 @@ class Product(
     slug: Mapped[str] = mapped_column(
         String(120),
         nullable=False,
+    )
+
+class ProductTruth(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    LifecycleMixin,
+    VersionMetadataMixin,
+    Base,
+):
+    __tablename__ = "product_truths"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "product_id",
+            "version",
+            name="uq_product_truths_product_version",
+        ),
+    )
+
+    product_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("products.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    parent_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("product_truths.id", ondelete="SET NULL"),
+        nullable=True,
     )
