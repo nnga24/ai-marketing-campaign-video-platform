@@ -221,3 +221,38 @@ class ProductClaim(
         ),
         nullable=False,
     )
+
+
+class ProductClaimEvidence(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    ProvenanceMixin,
+    Base,
+):
+    __tablename__ = "product_claim_evidence"
+
+    product_claim_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("product_claims.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    description: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    reference_uri: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    verification_status: Mapped[FactVerificationStatus] = mapped_column(
+        SAEnum(
+            FactVerificationStatus,
+            native_enum=False,
+            length=32,
+        ),
+        nullable=False,
+    )
