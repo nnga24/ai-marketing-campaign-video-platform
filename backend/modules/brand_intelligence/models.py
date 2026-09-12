@@ -192,3 +192,32 @@ class ProductFact(
         ),
         nullable=False,
     )
+
+class ProductClaim(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    ProvenanceMixin,
+    Base,
+):
+    __tablename__ = "product_claims"
+
+    product_truth_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("product_truths.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    statement: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    verification_status: Mapped[FactVerificationStatus] = mapped_column(
+        SAEnum(
+            FactVerificationStatus,
+            native_enum=False,
+            length=32,
+        ),
+        nullable=False,
+    )

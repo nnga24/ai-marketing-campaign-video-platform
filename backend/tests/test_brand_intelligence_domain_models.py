@@ -8,6 +8,7 @@ from modules.brand_intelligence.models import (
     Brand,
     BrandProfile,
     Product,
+    ProductClaim,
     ProductFact,
     ProductTruth,
 )
@@ -280,6 +281,44 @@ def test_product_fact_table_contract():
 
 def test_product_fact_requires_explicit_source_and_verification():
     columns = ProductFact.__table__.columns
+
+    source_type_column = columns["source_type"]
+    verification_column = columns["verification_status"]
+
+    assert source_type_column.default is None
+    assert source_type_column.server_default is None
+
+    assert verification_column.default is None
+    assert verification_column.server_default is None
+
+def test_product_claim_table_contract():
+    columns = ProductClaim.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "product_truth_id",
+        "statement",
+        "verification_status",
+        "created_at",
+        "updated_at",
+        "source_type",
+    }
+
+    assert columns["product_truth_id"].nullable is False
+    assert columns["statement"].nullable is False
+    assert columns["verification_status"].nullable is False
+    assert columns["source_type"].nullable is False
+
+    product_truth_fk = next(
+        iter(columns["product_truth_id"].foreign_keys)
+    )
+
+    assert product_truth_fk.target_fullname == "product_truths.id"
+    assert product_truth_fk.ondelete == "CASCADE"
+
+
+def test_product_claim_requires_explicit_source_and_verification():
+    columns = ProductClaim.__table__.columns
 
     source_type_column = columns["source_type"]
     verification_column = columns["verification_status"]
