@@ -1,24 +1,115 @@
-# Environment variables (Private / Secret Keys)
+
+# Environment / Secrets
+
+
 .env
-.env.local
+.env.*
+!.env.example
 backend/.env
 
-# Local Storage (Large files, audio, video, images)
-# backend/storage/
 
-# Python cache & build
+
+# Python virtual environment
+
+
+venv/
+.venv/
+
+
+
+# Python cache / build
+
+
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.pytest_cache/
 
-# Video processing temporary files & backups
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+build/
+dist/
+*.egg-info/
+
+
+
+# Local IDE / Editor
+
+
+.vscode/
+.idea/
+
+*.swp
+*.swo
+
+
+
+# Local generated application storage
+
+
+backend/storage/*
+!backend/storage/.gitkeep
+
+
+
+# Generated video / scene outputs
+
+
+assets/final_videos/
+assets/generated_scenes/
+
+
+
+# Generated voice outputs
+
+
+story-board/voice/
+
+
+
+# Temporary / generated files
+
+
 assets/generated_scenes/raw/
-*.tmp.mp4
+
 *.tmp
+*.tmp.mp4
+*.log
+
+
+
+# Python / application local data
+
+
+*.db
+*.sqlite
+*.sqlite3
+
+
 
 # Operating System
+
+
 .DS_Store
 Thumbs.db
 ehthumbs.db
+
+
+
+# Testing / Coverage
+
+
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+
+
+
+# Logs
+
+
+logs/
+*.log
