@@ -1,7 +1,7 @@
 from sqlalchemy import UniqueConstraint
 
 from modules.brand_intelligence.enums import FactVerificationStatus
-from modules.brand_intelligence.models import Brand
+from modules.brand_intelligence.models import Brand, BrandProfile
 from modules.common.enums import EntityStatus
 
 
@@ -57,3 +57,71 @@ def test_brand_defaults_to_draft():
 
     assert status_column.default.arg == EntityStatus.DRAFT
     assert str(status_column.server_default.arg) == "DRAFT"
+
+
+def test_brand_profile_table_contract():
+    columns = BrandProfile.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "brand_id",
+        "parent_version_id",
+        "overview",
+        "created_at",
+        "updated_at",
+        "status",
+        "source_type",
+        "version",
+        "schema_version",
+        "is_outdated",
+    }
+
+    assert columns["brand_id"].nullable is False
+    assert columns["parent_version_id"].nullable is True
+    assert columns["overview"].nullable is True
+    assert columns["source_type"].nullable is False
+
+    brand_fk = next(iter(columns["brand_id"].foreign_keys))
+    parent_fk = next(iter(columns["parent_version_id"].foreign_keys))
+
+    assert brand_fk.target_fullname == "brands.id"
+    assert brand_fk.ondelete == "CASCADE"
+
+    assert parent_fk.target_fullname == "brand_profiles.id"
+    assert parent_fk.ondelete == "SET NULL"
+
+
+def test_brand_profile_version_is_unique_per_brand():
+    unique_constraints = [
+        constraint
+        for constraint in BrandProfile.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    ]
+
+    assert any(
+        constraint.name == "uq_brand_profiles_brand_version"
+        and [column.name for column in constraint.columns]
+        == ["brand_id", "version"]
+        for constraint in unique_constraints
+    )
+
+
+def test_brand_profile_version_metadata_defaults():
+    columns = BrandProfile.__table__.columns
+
+    assert columns["version"].default.arg == 1
+    assert str(columns["version"].server_default.arg) == "1"
+
+    assert columns["schema_version"].default.arg == 1
+    assert str(columns["schema_version"].server_default.arg) == "1"
+
+    assert columns["is_outdated"].default.arg is False
+    assert str(columns["is_outdated"].server_default.arg) == "false"
+
+
+def test_brand_profile_requires_explicit_provenance():
+    source_type_column = BrandProfile.__table__.columns["source_type"]
+
+    assert source_type_column.nullable is False
+    assert source_type_column.default is None
+    assert source_type_column.server_default is None
