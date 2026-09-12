@@ -5,6 +5,9 @@ class Settings(BaseSettings):
     # API Keys
     GEMINI_API_KEY: str = ""
     ELEVENLABS_API_KEY: str = ""
+
+    # Database
+    DATABASE_URL: str = ""
     
     # Models & Voice
     GEMINI_MODEL: str = "gemini-3.6-flash"
