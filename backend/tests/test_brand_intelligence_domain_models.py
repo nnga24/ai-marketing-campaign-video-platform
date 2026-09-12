@@ -1,7 +1,7 @@
 from sqlalchemy import UniqueConstraint
 
 from modules.brand_intelligence.enums import FactVerificationStatus
-from modules.brand_intelligence.models import Brand, BrandProfile
+from modules.brand_intelligence.models import Brand, BrandProfile, Product
 from modules.common.enums import EntityStatus
 
 
@@ -125,3 +125,49 @@ def test_brand_profile_requires_explicit_provenance():
     assert source_type_column.nullable is False
     assert source_type_column.default is None
     assert source_type_column.server_default is None
+
+
+def test_product_table_contract():
+    columns = Product.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "brand_id",
+        "name",
+        "slug",
+        "created_at",
+        "updated_at",
+        "status",
+    }
+
+    assert columns["id"].primary_key is True
+    assert columns["brand_id"].nullable is False
+    assert columns["name"].nullable is False
+    assert columns["slug"].nullable is False
+
+    brand_fk = next(iter(columns["brand_id"].foreign_keys))
+
+    assert brand_fk.target_fullname == "brands.id"
+    assert brand_fk.ondelete == "CASCADE"
+
+
+def test_product_slug_is_unique_per_brand():
+    unique_constraints = [
+        constraint
+        for constraint in Product.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    ]
+
+    assert any(
+        constraint.name == "uq_products_brand_slug"
+        and [column.name for column in constraint.columns]
+        == ["brand_id", "slug"]
+        for constraint in unique_constraints
+    )
+
+
+def test_product_defaults_to_draft():
+    status_column = Product.__table__.columns["status"]
+
+    assert status_column.default.arg == EntityStatus.DRAFT
+    assert str(status_column.server_default.arg) == "DRAFT"

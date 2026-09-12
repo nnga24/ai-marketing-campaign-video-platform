@@ -78,3 +78,36 @@ class BrandProfile(
         Text,
         nullable=True,
     )
+
+class Product(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    LifecycleMixin,
+    Base,
+):
+    __tablename__ = "products"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "brand_id",
+            "slug",
+            name="uq_products_brand_slug",
+        ),
+    )
+
+    brand_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("brands.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+
+    slug: Mapped[str] = mapped_column(
+        String(120),
+        nullable=False,
+    )
