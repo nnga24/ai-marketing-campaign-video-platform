@@ -1,9 +1,9 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Uuid, func
+from sqlalchemy import Boolean, DateTime, Enum as SAEnum, Integer, Uuid, func, text
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import DateTime, Enum as SAEnum, Uuid, func
+
 from modules.common.enums import EntityStatus, SourceType
 
 
@@ -52,3 +52,32 @@ class ProvenanceMixin:
         ),
         nullable=False,
     )
+
+class VersionMetadataMixin:
+    version: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+        server_default=text("1"),
+    )
+
+    schema_version: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+        server_default=text("1"),
+    )
+
+    is_outdated: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=text("false"),
+    )
+
+class VersionedArtifactMixin(
+    LifecycleMixin,
+    ProvenanceMixin,
+    VersionMetadataMixin,
+):
+    pass
