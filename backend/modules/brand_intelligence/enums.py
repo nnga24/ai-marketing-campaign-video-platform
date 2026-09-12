@@ -1,0 +1,28 @@
+from enum import Enum
+
+
+class FactVerificationStatus(str, Enum):
+    CONFIRMED = "CONFIRMED"
+    PROPOSED = "PROPOSED"
+    UNKNOWN = "UNKNOWN"
+
+class ProductFactType(str, Enum):
+    DESCRIPTION = "DESCRIPTION"
+    FEATURE = "FEATURE"
+    INGREDIENT = "INGREDIENT"
+    SPECIFICATION = "SPECIFICATION"
+    USAGE = "USAGE"
+    AVAILABILITY = "AVAILABILITY"
+
+class BrandRuleType(str, Enum):
+    REQUIRED = "REQUIRED"
+    FORBIDDEN = "FORBIDDEN"
+    PREFERRED = "PREFERRED"
+    DISCOURAGED = "DISCOURAGED"
+
+class BrandFactType(str, Enum):
+    INDUSTRY = "INDUSTRY"
+    BUSINESS_MODEL = "BUSINESS_MODEL"
+    LOCATION = "LOCATION"
+    OPERATING_AREA = "OPERATING_AREA"
+    CONTACT = "CONTACT"
