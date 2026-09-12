@@ -1,0 +1,36 @@
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python environment
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Development cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Runtime storage
+storage/*
+!storage/.gitkeep
+
+# Temporary files
+*.tmp
+*.tmp.mp4
+*.log
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
