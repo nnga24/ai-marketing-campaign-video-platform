@@ -1,3 +1,4 @@
+from modules.brand_intelligence.models import Brand
 from modules.identity.models import User, WorkspaceMembership
 from modules.projects.models import Project
 from modules.workspaces.models import Workspace
@@ -7,4 +8,5 @@ __all__ = [
     "Project",
     "User",
     "WorkspaceMembership",
+    "Brand",
 ]
