@@ -1,5 +1,6 @@
 from core.config import settings
 from infrastructure.database.base import Base
+import modules.models
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
