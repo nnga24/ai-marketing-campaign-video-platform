@@ -256,3 +256,38 @@ class ProductClaimEvidence(
         ),
         nullable=False,
     )
+
+class BrandVoice(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    Base,
+):
+    __tablename__ = "brand_voices"
+
+    brand_profile_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("brand_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+
+    primary_language: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+    )
+
+    tone: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    personality: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    style_guidelines: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )

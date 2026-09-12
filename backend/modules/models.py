@@ -1,6 +1,7 @@
 from modules.brand_intelligence.models import (
     Brand,
     BrandProfile,
+    BrandVoice,
     Product,
     ProductClaim,
     ProductClaimEvidence,
@@ -18,6 +19,7 @@ __all__ = [
     "WorkspaceMembership",
     "Brand",
     "BrandProfile",
+    "BrandVoice",
     "Product",
     "ProductTruth",
     "ProductFact",

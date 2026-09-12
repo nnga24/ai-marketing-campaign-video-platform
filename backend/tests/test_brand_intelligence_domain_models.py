@@ -7,6 +7,7 @@ from modules.brand_intelligence.enums import (
 from modules.brand_intelligence.models import (
     Brand,
     BrandProfile,
+    BrandVoice,
     Product,
     ProductClaim,
     ProductClaimEvidence,
@@ -370,3 +371,39 @@ def test_product_claim_evidence_requires_explicit_source_and_verification():
 
     assert verification_column.default is None
     assert verification_column.server_default is None
+
+def test_brand_voice_table_contract():
+    columns = BrandVoice.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "brand_profile_id",
+        "primary_language",
+        "tone",
+        "personality",
+        "style_guidelines",
+        "created_at",
+        "updated_at",
+    }
+
+    assert columns["brand_profile_id"].nullable is False
+    assert columns["primary_language"].nullable is False
+    assert columns["tone"].nullable is True
+    assert columns["personality"].nullable is True
+    assert columns["style_guidelines"].nullable is True
+
+    brand_profile_fk = next(
+        iter(columns["brand_profile_id"].foreign_keys)
+    )
+
+    assert brand_profile_fk.target_fullname == "brand_profiles.id"
+    assert brand_profile_fk.ondelete == "CASCADE"
+
+
+def test_brand_voice_is_unique_per_brand_profile():
+    columns = BrandVoice.__table__.columns
+
+    brand_profile_column = columns["brand_profile_id"]
+
+    assert brand_profile_column.unique is True
+    assert brand_profile_column.index is True
