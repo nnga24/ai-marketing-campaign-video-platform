@@ -10,6 +10,7 @@ from sqlalchemy import (
 )
 
 from modules.brand_intelligence.enums import (
+    BrandRuleType,
     FactVerificationStatus,
     ProductFactType,
 )
@@ -290,4 +291,32 @@ class BrandVoice(
     style_guidelines: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
+    )
+
+class BrandRule(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    Base,
+):
+    __tablename__ = "brand_rules"
+
+    brand_profile_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("brand_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    rule_type: Mapped[BrandRuleType] = mapped_column(
+        SAEnum(
+            BrandRuleType,
+            native_enum=False,
+            length=32,
+        ),
+        nullable=False,
+    )
+
+    statement: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
     )

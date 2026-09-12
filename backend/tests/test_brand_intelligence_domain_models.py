@@ -1,12 +1,14 @@
 from sqlalchemy import UniqueConstraint
 
 from modules.brand_intelligence.enums import (
+    BrandRuleType,
     FactVerificationStatus,
     ProductFactType,
 )
 from modules.brand_intelligence.models import (
     Brand,
     BrandProfile,
+    BrandRule,
     BrandVoice,
     Product,
     ProductClaim,
@@ -407,3 +409,35 @@ def test_brand_voice_is_unique_per_brand_profile():
 
     assert brand_profile_column.unique is True
     assert brand_profile_column.index is True
+
+def test_brand_rule_table_contract():
+    columns = BrandRule.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "brand_profile_id",
+        "rule_type",
+        "statement",
+        "created_at",
+        "updated_at",
+    }
+
+    assert columns["brand_profile_id"].nullable is False
+    assert columns["rule_type"].nullable is False
+    assert columns["statement"].nullable is False
+
+    brand_profile_fk = next(
+        iter(columns["brand_profile_id"].foreign_keys)
+    )
+
+    assert brand_profile_fk.target_fullname == "brand_profiles.id"
+    assert brand_profile_fk.ondelete == "CASCADE"
+
+
+def test_brand_rule_type_values():
+    assert [item.value for item in BrandRuleType] == [
+        "REQUIRED",
+        "FORBIDDEN",
+        "PREFERRED",
+        "DISCOURAGED",
+    ]

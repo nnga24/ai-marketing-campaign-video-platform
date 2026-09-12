@@ -13,3 +13,9 @@ class ProductFactType(str, Enum):
     SPECIFICATION = "SPECIFICATION"
     USAGE = "USAGE"
     AVAILABILITY = "AVAILABILITY"
+
+class BrandRuleType(str, Enum):
+    REQUIRED = "REQUIRED"
+    FORBIDDEN = "FORBIDDEN"
+    PREFERRED = "PREFERRED"
+    DISCOURAGED = "DISCOURAGED"
