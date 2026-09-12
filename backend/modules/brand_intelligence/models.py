@@ -1,11 +1,24 @@
 import uuid
 
-from sqlalchemy import ForeignKey, String, Text, UniqueConstraint, Uuid
+from sqlalchemy import (
+    Enum as SAEnum,
+    ForeignKey,
+    String,
+    Text,
+    UniqueConstraint,
+    Uuid,
+)
+
+from modules.brand_intelligence.enums import (
+    FactVerificationStatus,
+    ProductFactType,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database.base import Base
 from modules.common.mixins import (
     LifecycleMixin,
+    ProvenanceMixin,
     TimestampMixin,
     UUIDPrimaryKeyMixin,
     VersionedArtifactMixin,
@@ -140,4 +153,42 @@ class ProductTruth(
         Uuid(as_uuid=True),
         ForeignKey("product_truths.id", ondelete="SET NULL"),
         nullable=True,
+    )
+
+class ProductFact(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    ProvenanceMixin,
+    Base,
+):
+    __tablename__ = "product_facts"
+
+    product_truth_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("product_truths.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    fact_type: Mapped[ProductFactType] = mapped_column(
+        SAEnum(
+            ProductFactType,
+            native_enum=False,
+            length=32,
+        ),
+        nullable=False,
+    )
+
+    statement: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    verification_status: Mapped[FactVerificationStatus] = mapped_column(
+        SAEnum(
+            FactVerificationStatus,
+            native_enum=False,
+            length=32,
+        ),
+        nullable=False,
     )

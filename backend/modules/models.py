@@ -2,6 +2,7 @@ from modules.brand_intelligence.models import (
     Brand,
     BrandProfile,
     Product,
+    ProductFact,
     ProductTruth,
 )
 from modules.identity.models import User, WorkspaceMembership
@@ -17,4 +18,5 @@ __all__ = [
     "BrandProfile",
     "Product",
     "ProductTruth",
+    "ProductFact",
 ]
