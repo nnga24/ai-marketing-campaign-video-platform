@@ -105,3 +105,32 @@ class CreativeVariant(
         Text,
         nullable=False,
     )
+
+class CreativeVariantDecision(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    Base,
+):
+    __tablename__ = "creative_variant_decisions"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "creative_variant_id",
+            "creative_decision_id",
+            name="uq_creative_variant_decision_pair",
+        ),
+    )
+
+    creative_variant_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("creative_variants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    creative_decision_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("creative_decisions.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )

@@ -4,6 +4,7 @@ from modules.creative_intelligence.models import (
     CreativeBrief,
     CreativeDecision,
     CreativeVariant,
+    CreativeVariantDecision,
 )
 
 
@@ -155,4 +156,54 @@ def test_creative_variant_brief_key_unique_constraint():
     assert [column.name for column in matching_constraint.columns] == [
         "creative_brief_id",
         "variant_key",
+    ]
+
+def test_creative_variant_decision_table_contract():
+    columns = CreativeVariantDecision.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "creative_variant_id",
+        "creative_decision_id",
+        "created_at",
+        "updated_at",
+    }
+
+    assert columns["creative_variant_id"].nullable is False
+    assert columns["creative_decision_id"].nullable is False
+
+    variant_fk = next(
+        iter(columns["creative_variant_id"].foreign_keys)
+    )
+    decision_fk = next(
+        iter(columns["creative_decision_id"].foreign_keys)
+    )
+
+    assert variant_fk.target_fullname == "creative_variants.id"
+    assert variant_fk.ondelete == "CASCADE"
+
+    assert decision_fk.target_fullname == "creative_decisions.id"
+    assert decision_fk.ondelete == "RESTRICT"
+
+    assert "source_type" not in columns
+    assert "status" not in columns
+    assert "version" not in columns
+
+
+def test_creative_variant_decision_pair_unique_constraint():
+    unique_constraints = [
+        constraint
+        for constraint in CreativeVariantDecision.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    ]
+
+    matching_constraint = next(
+        constraint
+        for constraint in unique_constraints
+        if constraint.name == "uq_creative_variant_decision_pair"
+    )
+
+    assert [column.name for column in matching_constraint.columns] == [
+        "creative_variant_id",
+        "creative_decision_id",
     ]

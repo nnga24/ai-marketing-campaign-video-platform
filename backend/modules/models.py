@@ -44,6 +44,7 @@ from modules.creative_intelligence.models import (
     CreativeBrief,
     CreativeDecision,
     CreativeVariant,
+    CreativeVariantDecision,
 )
 
 __all__ = [
@@ -81,4 +82,5 @@ __all__ = [
     "CreativeBrief",
     "CreativeDecision",
     "CreativeVariant",
+    "CreativeVariantDecision",
 ]
