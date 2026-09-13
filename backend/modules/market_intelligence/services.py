@@ -7,8 +7,75 @@ from modules.market_intelligence.models import (
     ResearchTaskExecution,
 )
 
+from datetime import datetime
+from modules.market_intelligence.enums import ResearchRunStatus
 class MarketIntelligenceInvariantError(ValueError):
     pass
+
+_ALLOWED_RESEARCH_RUN_TRANSITIONS: dict[
+    ResearchRunStatus,
+    frozenset[ResearchRunStatus],
+] = {
+    ResearchRunStatus.PENDING: frozenset({
+        ResearchRunStatus.RUNNING,
+        ResearchRunStatus.CANCELLED,
+    }),
+    ResearchRunStatus.RUNNING: frozenset({
+        ResearchRunStatus.SUCCEEDED,
+        ResearchRunStatus.PARTIAL,
+        ResearchRunStatus.FAILED,
+        ResearchRunStatus.CANCELLED,
+    }),
+    ResearchRunStatus.SUCCEEDED: frozenset(),
+    ResearchRunStatus.PARTIAL: frozenset(),
+    ResearchRunStatus.FAILED: frozenset(),
+    ResearchRunStatus.CANCELLED: frozenset(),
+}
+
+
+def ensure_research_run_transition_allowed(
+    *,
+    research_run: ResearchRun,
+    target_status: ResearchRunStatus,
+) -> None:
+    current_status = research_run.status
+
+    if target_status not in _ALLOWED_RESEARCH_RUN_TRANSITIONS[current_status]:
+        raise MarketIntelligenceInvariantError(
+            "ResearchRun transition "
+            f"{current_status.value} -> {target_status.value} "
+            "is not allowed."
+        )
+
+
+def transition_research_run(
+    *,
+    research_run: ResearchRun,
+    target_status: ResearchRunStatus,
+    transitioned_at: datetime,
+) -> ResearchRun:
+    ensure_research_run_transition_allowed(
+        research_run=research_run,
+        target_status=target_status,
+    )
+
+    if target_status is ResearchRunStatus.RUNNING:
+        research_run.status = target_status
+        research_run.started_at = transitioned_at
+        return research_run
+
+    if (
+        research_run.started_at is not None
+        and transitioned_at < research_run.started_at
+    ):
+        raise MarketIntelligenceInvariantError(
+            "ResearchRun finished_at cannot be earlier than started_at."
+        )
+
+    research_run.status = target_status
+    research_run.finished_at = transitioned_at
+
+    return research_run
 
 def ensure_research_task_matches_run_plan(
     *,

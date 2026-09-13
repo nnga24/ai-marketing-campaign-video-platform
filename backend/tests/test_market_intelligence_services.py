@@ -1,18 +1,21 @@
 import uuid
 
 import pytest
-
+from datetime import datetime, timezone
 from modules.market_intelligence.models import (
     ResearchPlan,
     ResearchRun,
     ResearchTask,
 )
+from modules.market_intelligence.enums import ResearchRunStatus
 from modules.market_intelligence.services import (
     MarketIntelligenceInvariantError,
     build_research_plan_version,
     build_research_task_execution,
     ensure_research_plan_parent_matches_marketing_brief,
     ensure_research_task_matches_run_plan,
+    ensure_research_run_transition_allowed,
+    transition_research_run,
 )
 
 
@@ -172,3 +175,158 @@ def test_build_research_task_execution_rejects_cross_plan_task():
             research_run=research_run,
             research_task=research_task,
         )
+
+def test_research_run_transition_allows_pending_to_running():
+    research_run = ResearchRun(
+        id=uuid.uuid4(),
+        research_plan_id=uuid.uuid4(),
+        status=ResearchRunStatus.PENDING,
+    )
+
+    ensure_research_run_transition_allowed(
+        research_run=research_run,
+        target_status=ResearchRunStatus.RUNNING,
+    )
+
+
+def test_research_run_transition_allows_pending_to_cancelled():
+    research_run = ResearchRun(
+        id=uuid.uuid4(),
+        research_plan_id=uuid.uuid4(),
+        status=ResearchRunStatus.PENDING,
+    )
+
+    ensure_research_run_transition_allowed(
+        research_run=research_run,
+        target_status=ResearchRunStatus.CANCELLED,
+    )
+
+
+def test_research_run_transition_allows_running_to_terminal_statuses():
+    research_run = ResearchRun(
+        id=uuid.uuid4(),
+        research_plan_id=uuid.uuid4(),
+        status=ResearchRunStatus.RUNNING,
+    )
+
+    for target_status in (
+        ResearchRunStatus.SUCCEEDED,
+        ResearchRunStatus.PARTIAL,
+        ResearchRunStatus.FAILED,
+        ResearchRunStatus.CANCELLED,
+    ):
+        ensure_research_run_transition_allowed(
+            research_run=research_run,
+            target_status=target_status,
+        )
+
+
+def test_research_run_transition_rejects_invalid_transition():
+    research_run = ResearchRun(
+        id=uuid.uuid4(),
+        research_plan_id=uuid.uuid4(),
+        status=ResearchRunStatus.PENDING,
+    )
+
+    with pytest.raises(
+        MarketIntelligenceInvariantError,
+        match="ResearchRun transition PENDING -> SUCCEEDED is not allowed.",
+    ):
+        ensure_research_run_transition_allowed(
+            research_run=research_run,
+            target_status=ResearchRunStatus.SUCCEEDED,
+        )
+
+def test_transition_research_run_to_running_sets_started_at():
+    transitioned_at = datetime(2026, 9, 13, 9, 0, tzinfo=timezone.utc)
+
+    research_run = ResearchRun(
+        id=uuid.uuid4(),
+        research_plan_id=uuid.uuid4(),
+        status=ResearchRunStatus.PENDING,
+    )
+
+    result = transition_research_run(
+        research_run=research_run,
+        target_status=ResearchRunStatus.RUNNING,
+        transitioned_at=transitioned_at,
+    )
+
+    assert result is research_run
+    assert research_run.status is ResearchRunStatus.RUNNING
+    assert research_run.started_at == transitioned_at
+    assert research_run.finished_at is None
+
+
+def test_transition_research_run_to_terminal_sets_finished_at():
+    started_at = datetime(2026, 9, 13, 9, 0, tzinfo=timezone.utc)
+    finished_at = datetime(2026, 9, 13, 9, 5, tzinfo=timezone.utc)
+
+    research_run = ResearchRun(
+        id=uuid.uuid4(),
+        research_plan_id=uuid.uuid4(),
+        status=ResearchRunStatus.RUNNING,
+        started_at=started_at,
+    )
+
+    transition_research_run(
+        research_run=research_run,
+        target_status=ResearchRunStatus.SUCCEEDED,
+        transitioned_at=finished_at,
+    )
+
+    assert research_run.status is ResearchRunStatus.SUCCEEDED
+    assert research_run.started_at == started_at
+    assert research_run.finished_at == finished_at
+
+
+def test_transition_research_run_pending_to_cancelled_sets_finished_at():
+    cancelled_at = datetime(2026, 9, 13, 9, 0, tzinfo=timezone.utc)
+
+    research_run = ResearchRun(
+        id=uuid.uuid4(),
+        research_plan_id=uuid.uuid4(),
+        status=ResearchRunStatus.PENDING,
+    )
+
+    transition_research_run(
+        research_run=research_run,
+        target_status=ResearchRunStatus.CANCELLED,
+        transitioned_at=cancelled_at,
+    )
+
+    assert research_run.status is ResearchRunStatus.CANCELLED
+    assert research_run.started_at is None
+    assert research_run.finished_at == cancelled_at
+
+
+def test_transition_research_run_rejects_finish_before_start():
+    started_at = datetime(2026, 9, 13, 9, 5, tzinfo=timezone.utc)
+    invalid_finished_at = datetime(
+        2026,
+        9,
+        13,
+        9,
+        0,
+        tzinfo=timezone.utc,
+    )
+
+    research_run = ResearchRun(
+        id=uuid.uuid4(),
+        research_plan_id=uuid.uuid4(),
+        status=ResearchRunStatus.RUNNING,
+        started_at=started_at,
+    )
+
+    with pytest.raises(
+        MarketIntelligenceInvariantError,
+        match="ResearchRun finished_at cannot be earlier than started_at.",
+    ):
+        transition_research_run(
+            research_run=research_run,
+            target_status=ResearchRunStatus.FAILED,
+            transitioned_at=invalid_finished_at,
+        )
+
+    assert research_run.status is ResearchRunStatus.RUNNING
+    assert research_run.finished_at is None
