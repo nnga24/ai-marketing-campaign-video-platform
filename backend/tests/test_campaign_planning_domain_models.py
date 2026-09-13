@@ -1,6 +1,11 @@
 from sqlalchemy import UniqueConstraint
 
-from modules.campaign_planning.models import Campaign, CampaignPlan
+from modules.campaign_planning.models import (
+    Campaign,
+    CampaignPlan,
+    ChannelPlan,
+    ContentItem,
+)
 
 
 def test_campaign_table_contract():
@@ -103,3 +108,80 @@ def test_campaign_plan_campaign_version_unique_constraint():
         "campaign_id",
         "version",
     ]
+
+def test_channel_plan_table_contract():
+    columns = ChannelPlan.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "campaign_plan_id",
+        "channel",
+        "created_at",
+        "updated_at",
+        "source_type",
+    }
+
+    assert columns["campaign_plan_id"].nullable is False
+    assert columns["channel"].nullable is False
+    assert columns["source_type"].nullable is False
+
+    campaign_plan_fk = next(
+        iter(columns["campaign_plan_id"].foreign_keys)
+    )
+
+    assert campaign_plan_fk.target_fullname == "campaign_plans.id"
+    assert campaign_plan_fk.ondelete == "CASCADE"
+
+    assert "status" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_channel_plan_campaign_plan_channel_unique_constraint():
+    unique_constraints = [
+        constraint
+        for constraint in ChannelPlan.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    ]
+
+    matching_constraint = next(
+        constraint
+        for constraint in unique_constraints
+        if constraint.name == "uq_channel_plans_campaign_plan_channel"
+    )
+
+    assert [column.name for column in matching_constraint.columns] == [
+        "campaign_plan_id",
+        "channel",
+    ]
+
+def test_content_item_table_contract():
+    columns = ContentItem.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "channel_plan_id",
+        "content_kind",
+        "working_title",
+        "created_at",
+        "updated_at",
+        "source_type",
+    }
+
+    assert columns["channel_plan_id"].nullable is False
+    assert columns["content_kind"].nullable is False
+    assert columns["working_title"].nullable is True
+    assert columns["source_type"].nullable is False
+
+    channel_plan_fk = next(
+        iter(columns["channel_plan_id"].foreign_keys)
+    )
+
+    assert channel_plan_fk.target_fullname == "channel_plans.id"
+    assert channel_plan_fk.ondelete == "CASCADE"
+
+    assert "status" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
