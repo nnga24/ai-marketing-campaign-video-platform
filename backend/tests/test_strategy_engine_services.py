@@ -3,13 +3,19 @@ import uuid
 import pytest
 
 from modules.marketing_requirement.models import MarketingBrief
-from modules.market_intelligence.models import ResearchPlan, ResearchRun
-from modules.strategy_engine.models import Strategy
+from modules.market_intelligence.models import (
+    ResearchFinding,
+    ResearchPlan,
+    ResearchRun,
+)
+from modules.strategy_engine.models import Strategy, StrategyDecision
 from modules.strategy_engine.services import (
     StrategyEngineInvariantError,
     build_strategy_version,
     ensure_strategy_parent_matches_project,
     ensure_strategy_research_run_matches_project,
+    build_strategy_decision_finding_link,
+    ensure_strategy_decision_finding_matches_strategy_run,
 )
 
 
@@ -186,4 +192,145 @@ def test_build_strategy_version_rejects_cross_project_parent():
             research_plan=research_plan,
             marketing_brief=marketing_brief,
             parent=parent,
+        )
+
+def test_strategy_decision_finding_lineage_accepts_matching_strategy_run():
+    strategy_id = uuid.uuid4()
+    research_run_id = uuid.uuid4()
+
+    strategy = Strategy(
+        id=strategy_id,
+        project_id=uuid.uuid4(),
+        research_run_id=research_run_id,
+        version=1,
+    )
+    decision = StrategyDecision(
+        id=uuid.uuid4(),
+        strategy_id=strategy_id,
+    )
+    finding = ResearchFinding(
+        id=uuid.uuid4(),
+        research_run_id=research_run_id,
+    )
+
+    ensure_strategy_decision_finding_matches_strategy_run(
+        strategy_decision=decision,
+        strategy=strategy,
+        research_finding=finding,
+    )
+
+
+def test_strategy_decision_finding_lineage_rejects_wrong_strategy():
+    strategy = Strategy(
+        id=uuid.uuid4(),
+        project_id=uuid.uuid4(),
+        research_run_id=uuid.uuid4(),
+        version=1,
+    )
+    decision = StrategyDecision(
+        id=uuid.uuid4(),
+        strategy_id=uuid.uuid4(),
+    )
+    finding = ResearchFinding(
+        id=uuid.uuid4(),
+        research_run_id=strategy.research_run_id,
+    )
+
+    with pytest.raises(
+        StrategyEngineInvariantError,
+        match="StrategyDecision must belong to the supplied Strategy.",
+    ):
+        ensure_strategy_decision_finding_matches_strategy_run(
+            strategy_decision=decision,
+            strategy=strategy,
+            research_finding=finding,
+        )
+
+
+def test_strategy_decision_finding_lineage_rejects_cross_run_finding():
+    strategy_id = uuid.uuid4()
+
+    strategy = Strategy(
+        id=strategy_id,
+        project_id=uuid.uuid4(),
+        research_run_id=uuid.uuid4(),
+        version=1,
+    )
+    decision = StrategyDecision(
+        id=uuid.uuid4(),
+        strategy_id=strategy_id,
+    )
+    finding = ResearchFinding(
+        id=uuid.uuid4(),
+        research_run_id=uuid.uuid4(),
+    )
+
+    with pytest.raises(
+        StrategyEngineInvariantError,
+        match=(
+            "ResearchFinding must belong to the ResearchRun "
+            "used by the Strategy."
+        ),
+    ):
+        ensure_strategy_decision_finding_matches_strategy_run(
+            strategy_decision=decision,
+            strategy=strategy,
+            research_finding=finding,
+        )
+
+
+def test_build_strategy_decision_finding_link():
+    strategy_id = uuid.uuid4()
+    research_run_id = uuid.uuid4()
+    decision_id = uuid.uuid4()
+    finding_id = uuid.uuid4()
+
+    strategy = Strategy(
+        id=strategy_id,
+        project_id=uuid.uuid4(),
+        research_run_id=research_run_id,
+        version=1,
+    )
+    decision = StrategyDecision(
+        id=decision_id,
+        strategy_id=strategy_id,
+    )
+    finding = ResearchFinding(
+        id=finding_id,
+        research_run_id=research_run_id,
+    )
+
+    link = build_strategy_decision_finding_link(
+        strategy_decision=decision,
+        strategy=strategy,
+        research_finding=finding,
+    )
+
+    assert link.strategy_decision_id == decision_id
+    assert link.research_finding_id == finding_id
+
+
+def test_build_strategy_decision_finding_link_rejects_cross_run():
+    strategy_id = uuid.uuid4()
+
+    strategy = Strategy(
+        id=strategy_id,
+        project_id=uuid.uuid4(),
+        research_run_id=uuid.uuid4(),
+        version=1,
+    )
+    decision = StrategyDecision(
+        id=uuid.uuid4(),
+        strategy_id=strategy_id,
+    )
+    finding = ResearchFinding(
+        id=uuid.uuid4(),
+        research_run_id=uuid.uuid4(),
+    )
+
+    with pytest.raises(StrategyEngineInvariantError):
+        build_strategy_decision_finding_link(
+            strategy_decision=decision,
+            strategy=strategy,
+            research_finding=finding,
         )

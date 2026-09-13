@@ -1,6 +1,11 @@
 from sqlalchemy import UniqueConstraint
 
-from modules.strategy_engine.models import Strategy
+from modules.common.enums import SourceType
+from modules.strategy_engine.models import (
+    Strategy,
+    StrategyDecision,
+    StrategyDecisionFinding,
+)
 
 
 def test_strategy_table_contract():
@@ -55,4 +60,94 @@ def test_strategy_unique_version_per_project():
     assert [column.name for column in matching_constraint.columns] == [
         "project_id",
         "version",
+    ]
+
+def test_strategy_decision_table_contract():
+    columns = StrategyDecision.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "strategy_id",
+        "decision_kind",
+        "statement",
+        "rationale",
+        "created_at",
+        "updated_at",
+        "source_type",
+    }
+
+    assert columns["strategy_id"].nullable is False
+    assert columns["decision_kind"].nullable is False
+    assert columns["statement"].nullable is False
+    assert columns["rationale"].nullable is True
+    assert columns["source_type"].nullable is False
+
+    strategy_fk = next(iter(columns["strategy_id"].foreign_keys))
+
+    assert strategy_fk.target_fullname == "strategies.id"
+    assert strategy_fk.ondelete == "CASCADE"
+
+    assert "status" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_strategy_decision_requires_explicit_source_type():
+    column = StrategyDecision.__table__.columns["source_type"]
+
+    assert column.type.enum_class is SourceType
+    assert column.default is None
+    assert column.server_default is None
+
+def test_strategy_decision_finding_table_contract():
+    columns = StrategyDecisionFinding.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "strategy_decision_id",
+        "research_finding_id",
+        "created_at",
+        "updated_at",
+    }
+
+    assert columns["strategy_decision_id"].nullable is False
+    assert columns["research_finding_id"].nullable is False
+
+    decision_fk = next(
+        iter(columns["strategy_decision_id"].foreign_keys)
+    )
+    finding_fk = next(
+        iter(columns["research_finding_id"].foreign_keys)
+    )
+
+    assert decision_fk.target_fullname == "strategy_decisions.id"
+    assert decision_fk.ondelete == "CASCADE"
+
+    assert finding_fk.target_fullname == "research_findings.id"
+    assert finding_fk.ondelete == "RESTRICT"
+
+    assert "source_type" not in columns
+    assert "status" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_strategy_decision_finding_unique_pair():
+    unique_constraints = [
+        constraint
+        for constraint in StrategyDecisionFinding.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    ]
+
+    matching_constraint = next(
+        constraint
+        for constraint in unique_constraints
+        if constraint.name == "uq_strategy_decision_finding_pair"
+    )
+
+    assert [column.name for column in matching_constraint.columns] == [
+        "strategy_decision_id",
+        "research_finding_id",
     ]
