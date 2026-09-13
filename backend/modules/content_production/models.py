@@ -213,7 +213,7 @@ class AssetRequirement(
         Text,
         nullable=True,
     )
-    
+
 class ProductionRun(
     UUIDPrimaryKeyMixin,
     TimestampMixin,
@@ -251,5 +251,51 @@ class ProductionRun(
 
     error_message: Mapped[str | None] = mapped_column(
         Text,
+        nullable=True,
+    )
+
+class ProductionAsset(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    Base,
+):
+    __tablename__ = "production_assets"
+
+    production_run_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("production_runs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    asset_requirement_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("asset_requirements.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    asset_kind: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+
+    storage_uri: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    provider_key: Mapped[str | None] = mapped_column(
+        String(128),
+        nullable=True,
+    )
+
+    provider_asset_id: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    mime_type: Mapped[str | None] = mapped_column(
+        String(128),
         nullable=True,
     )

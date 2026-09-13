@@ -2,6 +2,7 @@ from sqlalchemy import UniqueConstraint
 
 from modules.content_production.models import (
     AssetRequirement,
+    ProductionAsset,
     ProductionRun,
     Storyboard,
     StoryboardScene,
@@ -308,3 +309,55 @@ def test_asset_requirement_unique_key_per_scene():
         "storyboard_scene_id",
         "requirement_key",
     ]
+
+def test_production_asset_table_contract():
+    columns = ProductionAsset.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "production_run_id",
+        "asset_requirement_id",
+        "asset_kind",
+        "storage_uri",
+        "provider_key",
+        "provider_asset_id",
+        "mime_type",
+        "created_at",
+        "updated_at",
+    }
+
+    assert columns["production_run_id"].nullable is False
+    assert columns["asset_requirement_id"].nullable is False
+    assert columns["asset_kind"].nullable is False
+    assert columns["storage_uri"].nullable is False
+    assert columns["provider_key"].nullable is True
+    assert columns["provider_asset_id"].nullable is True
+    assert columns["mime_type"].nullable is True
+
+    production_run_fk = next(
+        iter(columns["production_run_id"].foreign_keys)
+    )
+    asset_requirement_fk = next(
+        iter(columns["asset_requirement_id"].foreign_keys)
+    )
+
+    assert production_run_fk.target_fullname == "production_runs.id"
+    assert production_run_fk.ondelete == "CASCADE"
+
+    assert asset_requirement_fk.target_fullname == "asset_requirements.id"
+    assert asset_requirement_fk.ondelete == "CASCADE"
+
+    assert "source_type" not in columns
+    assert "status" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_production_asset_string_lengths():
+    columns = ProductionAsset.__table__.columns
+
+    assert columns["asset_kind"].type.length == 64
+    assert columns["provider_key"].type.length == 128
+    assert columns["provider_asset_id"].type.length == 255
+    assert columns["mime_type"].type.length == 128

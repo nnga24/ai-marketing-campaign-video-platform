@@ -1,7 +1,10 @@
 from modules.creative_intelligence.models import CreativeVariant
 from modules.content_production.models import (
+    AssetRequirement,
+    ProductionAsset,
     ProductionRun,
     Storyboard,
+    StoryboardScene,
     VideoBrief,
 )
 from datetime import datetime
@@ -128,4 +131,48 @@ def build_storyboard_version(
         video_brief_id=video_brief.id,
         parent_version_id=parent.id if parent is not None else None,
         version=parent.version + 1 if parent is not None else 1,
+    )
+
+def ensure_production_asset_matches_run_storyboard(
+    *,
+    production_run: ProductionRun,
+    asset_requirement: AssetRequirement,
+    storyboard_scene: StoryboardScene,
+) -> None:
+    if asset_requirement.storyboard_scene_id != storyboard_scene.id:
+        raise ContentProductionInvariantError(
+            "AssetRequirement must belong to the supplied StoryboardScene."
+        )
+
+    if production_run.storyboard_id != storyboard_scene.storyboard_id:
+        raise ContentProductionInvariantError(
+            "AssetRequirement must belong to the Storyboard "
+            "executed by the ProductionRun."
+        )
+
+
+def build_production_asset(
+    *,
+    production_run: ProductionRun,
+    asset_requirement: AssetRequirement,
+    storyboard_scene: StoryboardScene,
+    storage_uri: str,
+    provider_key: str | None = None,
+    provider_asset_id: str | None = None,
+    mime_type: str | None = None,
+) -> ProductionAsset:
+    ensure_production_asset_matches_run_storyboard(
+        production_run=production_run,
+        asset_requirement=asset_requirement,
+        storyboard_scene=storyboard_scene,
+    )
+
+    return ProductionAsset(
+        production_run_id=production_run.id,
+        asset_requirement_id=asset_requirement.id,
+        asset_kind=asset_requirement.asset_kind,
+        storage_uri=storage_uri,
+        provider_key=provider_key,
+        provider_asset_id=provider_asset_id,
+        mime_type=mime_type,
     )

@@ -4,8 +4,10 @@ import pytest
 
 from modules.common.enums import SourceType
 from modules.content_production.models import (
+    AssetRequirement,
     ProductionRun,
     Storyboard,
+    StoryboardScene,
     VideoBrief,
 )
 from modules.content_production.services import (
@@ -16,6 +18,8 @@ from modules.content_production.services import (
     ensure_video_brief_parent_matches_creative_variant,
     ensure_production_run_transition_allowed,
     transition_production_run,
+    build_production_asset,
+    ensure_production_asset_matches_run_storyboard,
 )
 from modules.creative_intelligence.models import CreativeVariant
 from datetime import datetime, timezone
@@ -402,3 +406,159 @@ def test_transition_production_run_rejects_finish_before_start():
 
     assert production_run.status is ProductionRunStatus.RUNNING
     assert production_run.finished_at is None
+
+def test_production_asset_invariant_accepts_matching_storyboard():
+    storyboard_id = uuid.uuid4()
+
+    scene = StoryboardScene(
+        id=uuid.uuid4(),
+        storyboard_id=storyboard_id,
+        scene_key="scene-1",
+        sequence_index=1,
+        purpose="HOOK",
+        source_type=SourceType.AI_SUGGESTED,
+    )
+
+    requirement = AssetRequirement(
+        id=uuid.uuid4(),
+        storyboard_scene_id=scene.id,
+        requirement_key="hero-visual",
+        asset_kind="IMAGE",
+        description="Product hero visual.",
+        source_type=SourceType.AI_SUGGESTED,
+    )
+
+    production_run = ProductionRun(
+        id=uuid.uuid4(),
+        storyboard_id=storyboard_id,
+        status=ProductionRunStatus.PENDING,
+    )
+
+    ensure_production_asset_matches_run_storyboard(
+        production_run=production_run,
+        asset_requirement=requirement,
+        storyboard_scene=scene,
+    )
+
+
+def test_production_asset_invariant_rejects_requirement_from_other_scene():
+    storyboard_id = uuid.uuid4()
+
+    scene = StoryboardScene(
+        id=uuid.uuid4(),
+        storyboard_id=storyboard_id,
+        scene_key="scene-1",
+        sequence_index=1,
+        purpose="HOOK",
+        source_type=SourceType.AI_SUGGESTED,
+    )
+
+    requirement = AssetRequirement(
+        id=uuid.uuid4(),
+        storyboard_scene_id=uuid.uuid4(),
+        requirement_key="hero-visual",
+        asset_kind="IMAGE",
+        description="Product hero visual.",
+        source_type=SourceType.AI_SUGGESTED,
+    )
+
+    production_run = ProductionRun(
+        id=uuid.uuid4(),
+        storyboard_id=storyboard_id,
+        status=ProductionRunStatus.PENDING,
+    )
+
+    with pytest.raises(
+        ContentProductionInvariantError,
+        match="AssetRequirement must belong to the supplied StoryboardScene.",
+    ):
+        ensure_production_asset_matches_run_storyboard(
+            production_run=production_run,
+            asset_requirement=requirement,
+            storyboard_scene=scene,
+        )
+
+
+def test_production_asset_invariant_rejects_cross_storyboard_requirement():
+    scene = StoryboardScene(
+        id=uuid.uuid4(),
+        storyboard_id=uuid.uuid4(),
+        scene_key="scene-1",
+        sequence_index=1,
+        purpose="HOOK",
+        source_type=SourceType.AI_SUGGESTED,
+    )
+
+    requirement = AssetRequirement(
+        id=uuid.uuid4(),
+        storyboard_scene_id=scene.id,
+        requirement_key="hero-visual",
+        asset_kind="IMAGE",
+        description="Product hero visual.",
+        source_type=SourceType.AI_SUGGESTED,
+    )
+
+    production_run = ProductionRun(
+        id=uuid.uuid4(),
+        storyboard_id=uuid.uuid4(),
+        status=ProductionRunStatus.PENDING,
+    )
+
+    with pytest.raises(
+        ContentProductionInvariantError,
+        match=(
+            "AssetRequirement must belong to the Storyboard "
+            "executed by the ProductionRun."
+        ),
+    ):
+        ensure_production_asset_matches_run_storyboard(
+            production_run=production_run,
+            asset_requirement=requirement,
+            storyboard_scene=scene,
+        )
+
+
+def test_build_production_asset_uses_requirement_asset_kind():
+    storyboard_id = uuid.uuid4()
+
+    scene = StoryboardScene(
+        id=uuid.uuid4(),
+        storyboard_id=storyboard_id,
+        scene_key="scene-1",
+        sequence_index=1,
+        purpose="HOOK",
+        source_type=SourceType.AI_SUGGESTED,
+    )
+
+    requirement = AssetRequirement(
+        id=uuid.uuid4(),
+        storyboard_scene_id=scene.id,
+        requirement_key="hero-visual",
+        asset_kind="IMAGE",
+        description="Product hero visual.",
+        source_type=SourceType.AI_SUGGESTED,
+    )
+
+    production_run = ProductionRun(
+        id=uuid.uuid4(),
+        storyboard_id=storyboard_id,
+        status=ProductionRunStatus.RUNNING,
+    )
+
+    asset = build_production_asset(
+        production_run=production_run,
+        asset_requirement=requirement,
+        storyboard_scene=scene,
+        storage_uri="storage://production/image-001.webp",
+        provider_key="example-provider",
+        provider_asset_id="asset-001",
+        mime_type="image/webp",
+    )
+
+    assert asset.production_run_id == production_run.id
+    assert asset.asset_requirement_id == requirement.id
+    assert asset.asset_kind == requirement.asset_kind
+    assert asset.storage_uri == "storage://production/image-001.webp"
+    assert asset.provider_key == "example-provider"
+    assert asset.provider_asset_id == "asset-001"
+    assert asset.mime_type == "image/webp"
