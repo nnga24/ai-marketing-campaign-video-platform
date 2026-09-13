@@ -1,11 +1,12 @@
 import uuid
 
-from sqlalchemy import ForeignKey, UniqueConstraint, Uuid
+from sqlalchemy import ForeignKey, String, Text, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database.base import Base
 from modules.common.mixins import (
     LifecycleMixin,
+    ProvenanceMixin,
     TimestampMixin,
     UUIDPrimaryKeyMixin,
     VersionMetadataMixin,
@@ -39,5 +40,35 @@ class VideoBrief(
     parent_version_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True),
         ForeignKey("video_briefs.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+class VideoBriefInstruction(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    ProvenanceMixin,
+    Base,
+):
+    __tablename__ = "video_brief_instructions"
+
+    video_brief_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("video_briefs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    instruction_kind: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+
+    statement: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    rationale: Mapped[str | None] = mapped_column(
+        Text,
         nullable=True,
     )

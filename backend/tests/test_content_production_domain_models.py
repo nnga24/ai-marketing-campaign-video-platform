@@ -1,6 +1,9 @@
 from sqlalchemy import UniqueConstraint
 
-from modules.content_production.models import VideoBrief
+from modules.content_production.models import (
+    VideoBrief,
+    VideoBriefInstruction,
+)
 
 
 def test_video_brief_table_contract():
@@ -54,3 +57,39 @@ def test_video_brief_variant_version_unique_constraint():
         "creative_variant_id",
         "version",
     ]
+
+def test_video_brief_instruction_table_contract():
+    columns = VideoBriefInstruction.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "video_brief_id",
+        "instruction_kind",
+        "statement",
+        "rationale",
+        "created_at",
+        "updated_at",
+        "source_type",
+    }
+
+    assert columns["video_brief_id"].nullable is False
+    assert columns["instruction_kind"].nullable is False
+    assert columns["statement"].nullable is False
+    assert columns["rationale"].nullable is True
+    assert columns["source_type"].nullable is False
+
+    video_brief_fk = next(
+        iter(columns["video_brief_id"].foreign_keys)
+    )
+
+    assert video_brief_fk.target_fullname == "video_briefs.id"
+    assert video_brief_fk.ondelete == "CASCADE"
+
+    assert "status" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_video_brief_instruction_kind_is_not_unique():
+    assert VideoBriefInstruction.__table__.columns["instruction_kind"].unique is not True
