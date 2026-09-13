@@ -19,6 +19,12 @@ from modules.market_intelligence.models import (
     ResearchTask,
     ResearchTaskExecution,
 )
+from modules.strategy_engine.models import (
+    Strategy,
+    StrategyDecision,
+    StrategyDecisionFinding,
+    StrategyDecisionRequirement,
+)
 from modules.identity.models import User, WorkspaceMembership
 from modules.projects.models import Project
 from modules.workspaces.models import Workspace
@@ -51,4 +57,8 @@ __all__ = [
     "ResearchEvidence",
     "ResearchFinding",
     "ResearchFindingEvidence",
+    "Strategy",
+    "StrategyDecision",
+    "StrategyDecisionFinding",
+    "StrategyDecisionRequirement",
 ]
