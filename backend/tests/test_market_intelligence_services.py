@@ -6,8 +6,12 @@ from modules.market_intelligence.models import (
     ResearchPlan,
     ResearchRun,
     ResearchTask,
+    ResearchTaskExecution,
 )
-from modules.market_intelligence.enums import ResearchRunStatus
+from modules.market_intelligence.enums import (
+    ResearchRunStatus,
+    ResearchTaskExecutionStatus,
+)
 from modules.market_intelligence.services import (
     MarketIntelligenceInvariantError,
     build_research_plan_version,
@@ -16,6 +20,8 @@ from modules.market_intelligence.services import (
     ensure_research_task_matches_run_plan,
     ensure_research_run_transition_allowed,
     transition_research_run,
+    ensure_research_task_execution_transition_allowed,
+    transition_research_task_execution,
 )
 
 
@@ -330,3 +336,171 @@ def test_transition_research_run_rejects_finish_before_start():
 
     assert research_run.status is ResearchRunStatus.RUNNING
     assert research_run.finished_at is None
+
+def test_research_task_execution_transition_allows_pending_to_running():
+    execution = ResearchTaskExecution(
+        id=uuid.uuid4(),
+        research_run_id=uuid.uuid4(),
+        research_task_id=uuid.uuid4(),
+        status=ResearchTaskExecutionStatus.PENDING,
+    )
+
+    ensure_research_task_execution_transition_allowed(
+        execution=execution,
+        target_status=ResearchTaskExecutionStatus.RUNNING,
+    )
+
+
+def test_research_task_execution_transition_allows_pending_to_cancelled():
+    execution = ResearchTaskExecution(
+        id=uuid.uuid4(),
+        research_run_id=uuid.uuid4(),
+        research_task_id=uuid.uuid4(),
+        status=ResearchTaskExecutionStatus.PENDING,
+    )
+
+    ensure_research_task_execution_transition_allowed(
+        execution=execution,
+        target_status=ResearchTaskExecutionStatus.CANCELLED,
+    )
+
+
+def test_research_task_execution_transition_allows_running_to_terminal_statuses():
+    execution = ResearchTaskExecution(
+        id=uuid.uuid4(),
+        research_run_id=uuid.uuid4(),
+        research_task_id=uuid.uuid4(),
+        status=ResearchTaskExecutionStatus.RUNNING,
+    )
+
+    for target_status in (
+        ResearchTaskExecutionStatus.SUCCEEDED,
+        ResearchTaskExecutionStatus.FAILED,
+        ResearchTaskExecutionStatus.CANCELLED,
+    ):
+        ensure_research_task_execution_transition_allowed(
+            execution=execution,
+            target_status=target_status,
+        )
+
+
+def test_research_task_execution_transition_rejects_invalid_transition():
+    execution = ResearchTaskExecution(
+        id=uuid.uuid4(),
+        research_run_id=uuid.uuid4(),
+        research_task_id=uuid.uuid4(),
+        status=ResearchTaskExecutionStatus.PENDING,
+    )
+
+    with pytest.raises(
+        MarketIntelligenceInvariantError,
+        match=(
+            "ResearchTaskExecution transition "
+            "PENDING -> SUCCEEDED is not allowed."
+        ),
+    ):
+        ensure_research_task_execution_transition_allowed(
+            execution=execution,
+            target_status=ResearchTaskExecutionStatus.SUCCEEDED,
+        )
+
+def test_transition_research_task_execution_to_running_sets_started_at():
+    transitioned_at = datetime(2026, 9, 13, 10, 0, tzinfo=timezone.utc)
+
+    execution = ResearchTaskExecution(
+        id=uuid.uuid4(),
+        research_run_id=uuid.uuid4(),
+        research_task_id=uuid.uuid4(),
+        status=ResearchTaskExecutionStatus.PENDING,
+    )
+
+    result = transition_research_task_execution(
+        execution=execution,
+        target_status=ResearchTaskExecutionStatus.RUNNING,
+        transitioned_at=transitioned_at,
+    )
+
+    assert result is execution
+    assert execution.status is ResearchTaskExecutionStatus.RUNNING
+    assert execution.started_at == transitioned_at
+    assert execution.finished_at is None
+
+
+def test_transition_research_task_execution_to_terminal_sets_finished_at():
+    started_at = datetime(2026, 9, 13, 10, 0, tzinfo=timezone.utc)
+    finished_at = datetime(2026, 9, 13, 10, 3, tzinfo=timezone.utc)
+
+    execution = ResearchTaskExecution(
+        id=uuid.uuid4(),
+        research_run_id=uuid.uuid4(),
+        research_task_id=uuid.uuid4(),
+        status=ResearchTaskExecutionStatus.RUNNING,
+        started_at=started_at,
+    )
+
+    transition_research_task_execution(
+        execution=execution,
+        target_status=ResearchTaskExecutionStatus.SUCCEEDED,
+        transitioned_at=finished_at,
+    )
+
+    assert execution.status is ResearchTaskExecutionStatus.SUCCEEDED
+    assert execution.started_at == started_at
+    assert execution.finished_at == finished_at
+
+
+def test_transition_research_task_execution_pending_to_cancelled_sets_finished_at():
+    cancelled_at = datetime(2026, 9, 13, 10, 0, tzinfo=timezone.utc)
+
+    execution = ResearchTaskExecution(
+        id=uuid.uuid4(),
+        research_run_id=uuid.uuid4(),
+        research_task_id=uuid.uuid4(),
+        status=ResearchTaskExecutionStatus.PENDING,
+    )
+
+    transition_research_task_execution(
+        execution=execution,
+        target_status=ResearchTaskExecutionStatus.CANCELLED,
+        transitioned_at=cancelled_at,
+    )
+
+    assert execution.status is ResearchTaskExecutionStatus.CANCELLED
+    assert execution.started_at is None
+    assert execution.finished_at == cancelled_at
+
+
+def test_transition_research_task_execution_rejects_finish_before_start():
+    started_at = datetime(2026, 9, 13, 10, 5, tzinfo=timezone.utc)
+    invalid_finished_at = datetime(
+        2026,
+        9,
+        13,
+        10,
+        0,
+        tzinfo=timezone.utc,
+    )
+
+    execution = ResearchTaskExecution(
+        id=uuid.uuid4(),
+        research_run_id=uuid.uuid4(),
+        research_task_id=uuid.uuid4(),
+        status=ResearchTaskExecutionStatus.RUNNING,
+        started_at=started_at,
+    )
+
+    with pytest.raises(
+        MarketIntelligenceInvariantError,
+        match=(
+            "ResearchTaskExecution finished_at "
+            "cannot be earlier than started_at."
+        ),
+    ):
+        transition_research_task_execution(
+            execution=execution,
+            target_status=ResearchTaskExecutionStatus.FAILED,
+            transitioned_at=invalid_finished_at,
+        )
+
+    assert execution.status is ResearchTaskExecutionStatus.RUNNING
+    assert execution.finished_at is None
