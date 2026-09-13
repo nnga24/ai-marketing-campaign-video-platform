@@ -12,6 +12,7 @@ from modules.brand_intelligence.models import (
 )
 from modules.market_intelligence.models import (
     ResearchPlan,
+    ResearchRun,
     ResearchTask,
 )
 from modules.identity.models import User, WorkspaceMembership
@@ -41,4 +42,5 @@ __all__ = [
     "MarketingRequirement",
     "ResearchPlan",
     "ResearchTask",
+    "ResearchRun",
 ]

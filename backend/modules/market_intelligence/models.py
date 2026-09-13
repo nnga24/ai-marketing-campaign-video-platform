@@ -1,6 +1,16 @@
 import uuid
-
-from sqlalchemy import CheckConstraint, ForeignKey, Integer, Text, UniqueConstraint, Uuid
+from datetime import datetime
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    Enum as SAEnum,
+    ForeignKey,
+    Integer,
+    Text,
+    UniqueConstraint,
+    Uuid,
+)
+from modules.market_intelligence.enums import ResearchRunStatus
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database.base import Base
@@ -78,4 +88,44 @@ class ResearchTask(
     objective: Mapped[str] = mapped_column(
         Text,
         nullable=False,
+    )
+
+class ResearchRun(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    Base,
+):
+    __tablename__ = "research_runs"
+
+    research_plan_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("research_plans.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    status: Mapped[ResearchRunStatus] = mapped_column(
+        SAEnum(
+            ResearchRunStatus,
+            native_enum=False,
+            length=32,
+        ),
+        nullable=False,
+        default=ResearchRunStatus.PENDING,
+        server_default=ResearchRunStatus.PENDING.value,
+    )
+
+    started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    finished_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    error_message: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
     )
