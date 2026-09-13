@@ -59,7 +59,11 @@ from modules.content_production.models import (
     VideoBriefInstruction,
 )
 
-from modules.qa_approval_activation.models import Approval
+from modules.qa_approval_activation.models import (
+    Approval,
+    QualityReview,
+)
+
 __all__ = [
     "Workspace",
     "Project",
@@ -106,4 +110,5 @@ __all__ = [
     "FinalAsset",
     "FinalAssetInput",
     "Approval",
+    "QualityReview",
 ]

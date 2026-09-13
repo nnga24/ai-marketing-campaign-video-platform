@@ -12,7 +12,10 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database.base import Base
 from modules.common.mixins import TimestampMixin, UUIDPrimaryKeyMixin
-from modules.qa_approval_activation.enums import ApprovalStatus
+from modules.qa_approval_activation.enums import (
+    ApprovalStatus,
+    QualityReviewStatus,
+)
 
 
 class Approval(
@@ -66,5 +69,45 @@ class Approval(
 
     reviewed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
+        nullable=True,
+    )
+
+class QualityReview(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    Base,
+):
+    __tablename__ = "quality_reviews"
+
+    final_asset_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("final_assets.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+
+    status: Mapped[QualityReviewStatus] = mapped_column(
+        SAEnum(
+            QualityReviewStatus,
+            native_enum=False,
+            length=32,
+        ),
+        nullable=False,
+        default=QualityReviewStatus.PENDING,
+        server_default=QualityReviewStatus.PENDING.value,
+    )
+
+    started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    finished_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    error_message: Mapped[str | None] = mapped_column(
+        Text,
         nullable=True,
     )
