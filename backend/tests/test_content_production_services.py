@@ -5,6 +5,9 @@ import pytest
 from modules.common.enums import SourceType
 from modules.content_production.models import (
     AssetRequirement,
+    FinalAsset,
+    FinalAssetInput,
+    ProductionAsset,
     ProductionRun,
     Storyboard,
     StoryboardScene,
@@ -20,6 +23,8 @@ from modules.content_production.services import (
     transition_production_run,
     build_production_asset,
     ensure_production_asset_matches_run_storyboard,
+    build_final_asset_input,
+    ensure_final_asset_input_matches_production_run,
 )
 from modules.creative_intelligence.models import CreativeVariant
 from datetime import datetime, timezone
@@ -562,3 +567,86 @@ def test_build_production_asset_uses_requirement_asset_kind():
     assert asset.provider_key == "example-provider"
     assert asset.provider_asset_id == "asset-001"
     assert asset.mime_type == "image/webp"
+
+
+def test_final_asset_input_invariant_accepts_same_production_run():
+    production_run_id = uuid.uuid4()
+
+    final_asset = FinalAsset(
+        id=uuid.uuid4(),
+        production_run_id=production_run_id,
+        output_key="master",
+        asset_kind="VIDEO",
+        storage_uri="storage://final/master.mp4",
+    )
+
+    production_asset = ProductionAsset(
+        id=uuid.uuid4(),
+        production_run_id=production_run_id,
+        asset_requirement_id=uuid.uuid4(),
+        asset_kind="IMAGE",
+        storage_uri="storage://production/image.webp",
+    )
+
+    ensure_final_asset_input_matches_production_run(
+        final_asset=final_asset,
+        production_asset=production_asset,
+    )
+
+
+def test_final_asset_input_invariant_rejects_cross_run_asset():
+    final_asset = FinalAsset(
+        id=uuid.uuid4(),
+        production_run_id=uuid.uuid4(),
+        output_key="master",
+        asset_kind="VIDEO",
+        storage_uri="storage://final/master.mp4",
+    )
+
+    production_asset = ProductionAsset(
+        id=uuid.uuid4(),
+        production_run_id=uuid.uuid4(),
+        asset_requirement_id=uuid.uuid4(),
+        asset_kind="IMAGE",
+        storage_uri="storage://production/image.webp",
+    )
+
+    with pytest.raises(
+        ContentProductionInvariantError,
+        match=(
+            "ProductionAsset must belong to the same ProductionRun "
+            "as the FinalAsset."
+        ),
+    ):
+        ensure_final_asset_input_matches_production_run(
+            final_asset=final_asset,
+            production_asset=production_asset,
+        )
+
+
+def test_build_final_asset_input():
+    production_run_id = uuid.uuid4()
+
+    final_asset = FinalAsset(
+        id=uuid.uuid4(),
+        production_run_id=production_run_id,
+        output_key="master",
+        asset_kind="VIDEO",
+        storage_uri="storage://final/master.mp4",
+    )
+
+    production_asset = ProductionAsset(
+        id=uuid.uuid4(),
+        production_run_id=production_run_id,
+        asset_requirement_id=uuid.uuid4(),
+        asset_kind="IMAGE",
+        storage_uri="storage://production/image.webp",
+    )
+
+    link = build_final_asset_input(
+        final_asset=final_asset,
+        production_asset=production_asset,
+    )
+
+    assert link.final_asset_id == final_asset.id
+    assert link.production_asset_id == production_asset.id

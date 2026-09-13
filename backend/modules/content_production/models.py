@@ -341,3 +341,32 @@ class FinalAsset(
         String(128),
         nullable=True,
     )
+
+class FinalAssetInput(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    Base,
+):
+    __tablename__ = "final_asset_inputs"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "final_asset_id",
+            "production_asset_id",
+            name="uq_final_asset_inputs_pair",
+        ),
+    )
+
+    final_asset_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("final_assets.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    production_asset_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("production_assets.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )

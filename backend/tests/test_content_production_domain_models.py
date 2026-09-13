@@ -3,6 +3,7 @@ from sqlalchemy import UniqueConstraint
 from modules.content_production.models import (
     AssetRequirement,
     FinalAsset,
+    FinalAssetInput,
     ProductionAsset,
     ProductionRun,
     Storyboard,
@@ -412,4 +413,50 @@ def test_final_asset_unique_output_key_per_run():
     assert unique_constraints["uq_final_assets_run_output_key"] == [
         "production_run_id",
         "output_key",
+    ]
+
+def test_final_asset_input_table_contract():
+    columns = FinalAssetInput.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "final_asset_id",
+        "production_asset_id",
+        "created_at",
+        "updated_at",
+    }
+
+    assert columns["final_asset_id"].nullable is False
+    assert columns["production_asset_id"].nullable is False
+
+    final_asset_fk = next(
+        iter(columns["final_asset_id"].foreign_keys)
+    )
+    production_asset_fk = next(
+        iter(columns["production_asset_id"].foreign_keys)
+    )
+
+    assert final_asset_fk.target_fullname == "final_assets.id"
+    assert final_asset_fk.ondelete == "CASCADE"
+
+    assert production_asset_fk.target_fullname == "production_assets.id"
+    assert production_asset_fk.ondelete == "RESTRICT"
+
+    assert "source_type" not in columns
+    assert "status" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_final_asset_input_unique_pair():
+    unique_constraints = {
+        constraint.name: [column.name for column in constraint.columns]
+        for constraint in FinalAssetInput.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    }
+
+    assert unique_constraints["uq_final_asset_inputs_pair"] == [
+        "final_asset_id",
+        "production_asset_id",
     ]

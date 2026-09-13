@@ -1,6 +1,8 @@
 from modules.creative_intelligence.models import CreativeVariant
 from modules.content_production.models import (
     AssetRequirement,
+    FinalAsset,
+    FinalAssetInput,
     ProductionAsset,
     ProductionRun,
     Storyboard,
@@ -175,4 +177,31 @@ def build_production_asset(
         provider_key=provider_key,
         provider_asset_id=provider_asset_id,
         mime_type=mime_type,
+    )
+
+def ensure_final_asset_input_matches_production_run(
+    *,
+    final_asset: FinalAsset,
+    production_asset: ProductionAsset,
+) -> None:
+    if final_asset.production_run_id != production_asset.production_run_id:
+        raise ContentProductionInvariantError(
+            "ProductionAsset must belong to the same ProductionRun "
+            "as the FinalAsset."
+        )
+
+
+def build_final_asset_input(
+    *,
+    final_asset: FinalAsset,
+    production_asset: ProductionAsset,
+) -> FinalAssetInput:
+    ensure_final_asset_input_matches_production_run(
+        final_asset=final_asset,
+        production_asset=production_asset,
+    )
+
+    return FinalAssetInput(
+        final_asset_id=final_asset.id,
+        production_asset_id=production_asset.id,
     )

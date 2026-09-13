@@ -50,6 +50,7 @@ from modules.creative_intelligence.models import (
 from modules.content_production.models import (
     AssetRequirement,
     FinalAsset,
+    FinalAssetInput,
     ProductionAsset,
     ProductionRun,
     Storyboard,
@@ -102,4 +103,5 @@ __all__ = [
     "AssetRequirement",
     "ProductionAsset",
     "FinalAsset",
+    "FinalAssetInput",
 ]
