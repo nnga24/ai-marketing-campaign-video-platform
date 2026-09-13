@@ -8,6 +8,7 @@ from modules.market_intelligence.models import (
     ResearchPlan,
     ResearchRun,
 )
+from modules.market_intelligence.enums import ResearchRunStatus
 from modules.strategy_engine.models import Strategy, StrategyDecision
 from modules.strategy_engine.services import (
     StrategyEngineInvariantError,
@@ -16,6 +17,7 @@ from modules.strategy_engine.services import (
     ensure_strategy_research_run_matches_project,
     build_strategy_decision_finding_link,
     ensure_strategy_decision_finding_matches_strategy_run,
+    ensure_research_run_ready_for_strategy,
 )
 
 
@@ -33,6 +35,7 @@ def build_matching_research_lineage(project_id: uuid.UUID):
     research_run = ResearchRun(
         id=uuid.uuid4(),
         research_plan_id=research_plan.id,
+        status=ResearchRunStatus.SUCCEEDED,
     )
     return marketing_brief, research_plan, research_run
 
@@ -333,4 +336,60 @@ def test_build_strategy_decision_finding_link_rejects_cross_run():
             strategy_decision=decision,
             strategy=strategy,
             research_finding=finding,
+        )
+
+def test_research_run_ready_for_strategy_accepts_completed_states():
+    for status in (
+        ResearchRunStatus.SUCCEEDED,
+        ResearchRunStatus.PARTIAL,
+    ):
+        research_run = ResearchRun(
+            id=uuid.uuid4(),
+            research_plan_id=uuid.uuid4(),
+            status=status,
+        )
+
+        ensure_research_run_ready_for_strategy(
+            research_run=research_run,
+        )
+
+
+def test_research_run_ready_for_strategy_rejects_unready_states():
+    for status in (
+        ResearchRunStatus.PENDING,
+        ResearchRunStatus.RUNNING,
+        ResearchRunStatus.FAILED,
+        ResearchRunStatus.CANCELLED,
+    ):
+        research_run = ResearchRun(
+            id=uuid.uuid4(),
+            research_plan_id=uuid.uuid4(),
+            status=status,
+        )
+
+        with pytest.raises(
+            StrategyEngineInvariantError,
+            match=(
+                "ResearchRun must be SUCCEEDED or PARTIAL "
+                "before Strategy creation."
+            ),
+        ):
+            ensure_research_run_ready_for_strategy(
+                research_run=research_run,
+            )
+
+
+def test_build_strategy_version_rejects_unready_research_run():
+    project_id = uuid.uuid4()
+    marketing_brief, research_plan, research_run = (
+        build_matching_research_lineage(project_id)
+    )
+    research_run.status = ResearchRunStatus.RUNNING
+
+    with pytest.raises(StrategyEngineInvariantError):
+        build_strategy_version(
+            project_id=project_id,
+            research_run=research_run,
+            research_plan=research_plan,
+            marketing_brief=marketing_brief,
         )

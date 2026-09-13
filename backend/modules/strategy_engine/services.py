@@ -11,10 +11,21 @@ from modules.strategy_engine.models import (
     StrategyDecision,
     StrategyDecisionFinding,
 )
-
+from modules.market_intelligence.enums import ResearchRunStatus
 class StrategyEngineInvariantError(ValueError):
     pass
 
+def ensure_research_run_ready_for_strategy(
+    *,
+    research_run: ResearchRun,
+) -> None:
+    if research_run.status not in {
+        ResearchRunStatus.SUCCEEDED,
+        ResearchRunStatus.PARTIAL,
+    }:
+        raise StrategyEngineInvariantError(
+            "ResearchRun must be SUCCEEDED or PARTIAL before Strategy creation."
+        )
 def ensure_strategy_decision_finding_matches_strategy_run(
     *,
     strategy_decision: StrategyDecision,
@@ -89,6 +100,9 @@ def build_strategy_version(
     marketing_brief: MarketingBrief,
     parent: Strategy | None = None,
 ) -> Strategy:
+    ensure_research_run_ready_for_strategy(
+        research_run=research_run,
+    )
     ensure_strategy_research_run_matches_project(
         project_id=project_id,
         research_run=research_run,
