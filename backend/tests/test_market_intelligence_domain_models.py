@@ -3,6 +3,7 @@ from sqlalchemy import CheckConstraint, UniqueConstraint
 from modules.common.enums import SourceType
 from modules.market_intelligence.models import (
     ResearchEvidence,
+    ResearchFinding,
     ResearchPlan,
     ResearchRun,
     ResearchTask,
@@ -351,3 +352,50 @@ def test_research_evidence_has_no_implicit_defaults():
     assert columns["content_text"].default is None
     assert columns["content_fingerprint"].default is None
     assert columns["retrieved_at"].default is None
+
+def test_research_finding_table_contract():
+    columns = ResearchFinding.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "research_run_id",
+        "finding_kind",
+        "statement",
+        "rationale",
+        "created_at",
+        "updated_at",
+        "source_type",
+    }
+
+    assert columns["research_run_id"].nullable is False
+    assert columns["finding_kind"].nullable is False
+    assert columns["statement"].nullable is False
+    assert columns["source_type"].nullable is False
+
+    assert columns["rationale"].nullable is True
+
+    run_fk = next(iter(columns["research_run_id"].foreign_keys))
+
+    assert run_fk.target_fullname == "research_runs.id"
+    assert run_fk.ondelete == "CASCADE"
+
+    assert "status" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_research_finding_kind_contract():
+    column = ResearchFinding.__table__.columns["finding_kind"]
+
+    assert column.type.length == 64
+    assert column.default is None
+    assert column.server_default is None
+
+
+def test_research_finding_requires_explicit_source_type():
+    column = ResearchFinding.__table__.columns["source_type"]
+
+    assert column.type.enum_class is SourceType
+    assert column.default is None
+    assert column.server_default is None

@@ -263,3 +263,33 @@ class ResearchEvidence(
         DateTime(timezone=True),
         nullable=False,
     )
+
+class ResearchFinding(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    ProvenanceMixin,
+    Base,
+):
+    __tablename__ = "research_findings"
+
+    research_run_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("research_runs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    finding_kind: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+
+    statement: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    rationale: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
