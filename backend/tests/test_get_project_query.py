@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 import pytest
-
+from application.workspaces.repositories import WorkspaceRepository
 from application.projects.dto import ProjectView
 from application.projects.queries import (
     ProjectNotFoundError,
@@ -77,6 +77,9 @@ class FakeProjectUnitOfWork(ProjectUnitOfWork):
 
     def rollback(self) -> None:
         self.rolled_back = True
+    @property
+    def workspaces(self) -> WorkspaceRepository:
+        raise NotImplementedError
 
 
 def test_get_project_returns_application_view():

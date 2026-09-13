@@ -1,6 +1,9 @@
 from unittest.mock import MagicMock
 
 from sqlalchemy.orm import Session
+from infrastructure.database.repositories.workspaces import (
+    SQLAlchemyWorkspaceRepository,
+)
 
 from infrastructure.database.project_unit_of_work import (
     SQLAlchemyProjectUnitOfWork,
@@ -32,6 +35,18 @@ def test_project_unit_of_work_exposes_project_repository():
         assert isinstance(
             repository,
             SQLAlchemyProjectRepository,
+        )
+        assert repository._session is session
+
+def test_project_unit_of_work_exposes_workspace_repository():
+    uow, session, _ = build_project_uow()
+
+    with uow:
+        repository = uow.workspaces
+
+        assert isinstance(
+            repository,
+            SQLAlchemyWorkspaceRepository,
         )
         assert repository._session is session
 
