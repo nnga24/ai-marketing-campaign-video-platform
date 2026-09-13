@@ -8,3 +8,10 @@ class ResearchRunStatus(str, Enum):
     PARTIAL = "PARTIAL"
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
+
+class ResearchTaskExecutionStatus(str, Enum):
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    SUCCEEDED = "SUCCEEDED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"

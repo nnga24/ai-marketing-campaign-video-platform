@@ -5,8 +5,12 @@ from modules.market_intelligence.models import (
     ResearchPlan,
     ResearchRun,
     ResearchTask,
+    ResearchTaskExecution,
 )
-from modules.market_intelligence.enums import ResearchRunStatus
+from modules.market_intelligence.enums import (
+    ResearchRunStatus,
+    ResearchTaskExecutionStatus,
+)
 
 def test_research_plan_table_contract():
     columns = ResearchPlan.__table__.columns
@@ -180,3 +184,82 @@ def test_research_run_defaults_to_pending():
 
     assert column.default.arg is ResearchRunStatus.PENDING
     assert column.server_default.arg == ResearchRunStatus.PENDING.value
+
+def test_research_task_execution_table_contract():
+    columns = ResearchTaskExecution.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "research_run_id",
+        "research_task_id",
+        "status",
+        "started_at",
+        "finished_at",
+        "error_message",
+        "created_at",
+        "updated_at",
+    }
+
+    assert columns["research_run_id"].nullable is False
+    assert columns["research_task_id"].nullable is False
+    assert columns["status"].nullable is False
+
+    assert columns["started_at"].nullable is True
+    assert columns["finished_at"].nullable is True
+    assert columns["error_message"].nullable is True
+
+    run_fk = next(iter(columns["research_run_id"].foreign_keys))
+    task_fk = next(iter(columns["research_task_id"].foreign_keys))
+
+    assert run_fk.target_fullname == "research_runs.id"
+    assert run_fk.ondelete == "CASCADE"
+
+    assert task_fk.target_fullname == "research_tasks.id"
+    assert task_fk.ondelete == "CASCADE"
+
+    assert "source_type" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_research_task_execution_status_contract():
+    column = ResearchTaskExecution.__table__.columns["status"]
+
+    assert column.type.enum_class is ResearchTaskExecutionStatus
+    assert [item.value for item in ResearchTaskExecutionStatus] == [
+        "PENDING",
+        "RUNNING",
+        "SUCCEEDED",
+        "FAILED",
+        "CANCELLED",
+    ]
+
+
+def test_research_task_execution_defaults_to_pending():
+    column = ResearchTaskExecution.__table__.columns["status"]
+
+    assert column.default.arg is ResearchTaskExecutionStatus.PENDING
+    assert (
+        column.server_default.arg
+        == ResearchTaskExecutionStatus.PENDING.value
+    )
+
+
+def test_research_task_execution_unique_per_run_and_task():
+    unique_constraints = [
+        constraint
+        for constraint in ResearchTaskExecution.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    ]
+
+    matching_constraint = next(
+        constraint
+        for constraint in unique_constraints
+        if constraint.name == "uq_research_task_executions_run_task"
+    )
+
+    assert [column.name for column in matching_constraint.columns] == [
+        "research_run_id",
+        "research_task_id",
+    ]

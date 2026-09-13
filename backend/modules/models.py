@@ -14,6 +14,7 @@ from modules.market_intelligence.models import (
     ResearchPlan,
     ResearchRun,
     ResearchTask,
+    ResearchTaskExecution,
 )
 from modules.identity.models import User, WorkspaceMembership
 from modules.projects.models import Project
@@ -43,4 +44,5 @@ __all__ = [
     "ResearchPlan",
     "ResearchTask",
     "ResearchRun",
+    "ResearchTaskExecution",
 ]

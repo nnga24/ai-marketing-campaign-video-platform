@@ -10,7 +10,10 @@ from sqlalchemy import (
     UniqueConstraint,
     Uuid,
 )
-from modules.market_intelligence.enums import ResearchRunStatus
+from modules.market_intelligence.enums import (
+    ResearchRunStatus,
+    ResearchTaskExecutionStatus,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database.base import Base
@@ -113,6 +116,61 @@ class ResearchRun(
         nullable=False,
         default=ResearchRunStatus.PENDING,
         server_default=ResearchRunStatus.PENDING.value,
+    )
+
+    started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    finished_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    error_message: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+class ResearchTaskExecution(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    Base,
+):
+    __tablename__ = "research_task_executions"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "research_run_id",
+            "research_task_id",
+            name="uq_research_task_executions_run_task",
+        ),
+    )
+
+    research_run_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("research_runs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    research_task_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("research_tasks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    status: Mapped[ResearchTaskExecutionStatus] = mapped_column(
+        SAEnum(
+            ResearchTaskExecutionStatus,
+            native_enum=False,
+            length=32,
+        ),
+        nullable=False,
+        default=ResearchTaskExecutionStatus.PENDING,
+        server_default=ResearchTaskExecutionStatus.PENDING.value,
     )
 
     started_at: Mapped[datetime | None] = mapped_column(
