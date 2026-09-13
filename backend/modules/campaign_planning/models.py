@@ -1,6 +1,6 @@
 import uuid
-
-from sqlalchemy import ForeignKey, String, UniqueConstraint, Uuid
+import datetime
+from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database.base import Base
@@ -133,5 +133,9 @@ class ContentItem(
 
     working_title: Mapped[str | None] = mapped_column(
         String(255),
+        nullable=True,
+    )
+    planned_publish_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True),
         nullable=True,
     )

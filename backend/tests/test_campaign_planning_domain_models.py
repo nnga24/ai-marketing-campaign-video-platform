@@ -160,15 +160,16 @@ def test_content_item_table_contract():
     columns = ContentItem.__table__.columns
 
     assert set(columns.keys()) == {
-        "id",
-        "channel_plan_id",
-        "content_kind",
-        "working_title",
-        "created_at",
-        "updated_at",
-        "source_type",
+    "id",
+    "channel_plan_id",
+    "content_kind",
+    "working_title",
+    "planned_publish_at",
+    "created_at",
+    "updated_at",
+    "source_type",
     }
-
+    assert columns["planned_publish_at"].nullable is True
     assert columns["channel_plan_id"].nullable is False
     assert columns["content_kind"].nullable is False
     assert columns["working_title"].nullable is True
