@@ -5,7 +5,9 @@ from sqlalchemy import (
     DateTime,
     Enum as SAEnum,
     ForeignKey,
+    String,
     Text,
+    UniqueConstraint,
     Uuid,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -14,6 +16,7 @@ from infrastructure.database.base import Base
 from modules.common.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 from modules.qa_approval_activation.enums import (
     ApprovalStatus,
+    QualityCheckOutcome,
     QualityReviewStatus,
 )
 
@@ -108,6 +111,47 @@ class QualityReview(
     )
 
     error_message: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+class QualityCheckResult(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    Base,
+):
+    __tablename__ = "quality_check_results"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "quality_review_id",
+            "check_key",
+            name="uq_quality_check_results_review_key",
+        ),
+    )
+
+    quality_review_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("quality_reviews.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    check_key: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+
+    outcome: Mapped[QualityCheckOutcome] = mapped_column(
+        SAEnum(
+            QualityCheckOutcome,
+            native_enum=False,
+            length=32,
+        ),
+        nullable=False,
+    )
+
+    summary: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )

@@ -61,6 +61,7 @@ from modules.content_production.models import (
 
 from modules.qa_approval_activation.models import (
     Approval,
+    QualityCheckResult,
     QualityReview,
 )
 
@@ -111,4 +112,5 @@ __all__ = [
     "FinalAssetInput",
     "Approval",
     "QualityReview",
+    "QualityCheckResult",
 ]

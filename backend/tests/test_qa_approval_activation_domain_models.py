@@ -1,11 +1,14 @@
 from modules.qa_approval_activation.enums import (
     ApprovalStatus,
+    QualityCheckOutcome,
     QualityReviewStatus,
 )
 from modules.qa_approval_activation.models import (
     Approval,
+    QualityCheckResult,
     QualityReview,
 )
+from sqlalchemy import UniqueConstraint
 
 def test_approval_table_contract():
     columns = Approval.__table__.columns
@@ -97,3 +100,54 @@ def test_quality_review_table_contract():
     assert "version" not in columns
     assert "schema_version" not in columns
     assert "is_outdated" not in columns
+
+
+def test_quality_check_result_table_contract():
+    columns = QualityCheckResult.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "quality_review_id",
+        "check_key",
+        "outcome",
+        "summary",
+        "created_at",
+        "updated_at",
+    }
+
+    assert columns["quality_review_id"].nullable is False
+    assert columns["check_key"].nullable is False
+    assert columns["outcome"].nullable is False
+    assert columns["summary"].nullable is True
+
+    quality_review_fk = next(
+        iter(columns["quality_review_id"].foreign_keys)
+    )
+
+    assert quality_review_fk.target_fullname == "quality_reviews.id"
+    assert quality_review_fk.ondelete == "CASCADE"
+
+    assert columns["check_key"].type.length == 64
+    assert columns["outcome"].type.enum_class is QualityCheckOutcome
+    assert columns["outcome"].type.length == 32
+
+    assert "source_type" not in columns
+    assert "status" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_quality_check_result_unique_key_per_review():
+    unique_constraints = {
+        constraint.name: [column.name for column in constraint.columns]
+        for constraint in QualityCheckResult.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    }
+
+    assert unique_constraints[
+        "uq_quality_check_results_review_key"
+    ] == [
+        "quality_review_id",
+        "check_key",
+    ]
