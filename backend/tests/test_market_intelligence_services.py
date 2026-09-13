@@ -2,11 +2,17 @@ import uuid
 
 import pytest
 
-from modules.market_intelligence.models import ResearchPlan
+from modules.market_intelligence.models import (
+    ResearchPlan,
+    ResearchRun,
+    ResearchTask,
+)
 from modules.market_intelligence.services import (
     MarketIntelligenceInvariantError,
     build_research_plan_version,
+    build_research_task_execution,
     ensure_research_plan_parent_matches_marketing_brief,
+    ensure_research_task_matches_run_plan,
 )
 
 
@@ -85,4 +91,84 @@ def test_build_research_plan_version_rejects_cross_brief_parent():
         build_research_plan_version(
             marketing_brief_id=uuid.uuid4(),
             parent=parent,
+        )
+
+def test_research_task_run_plan_invariant_accepts_matching_plan():
+    research_plan_id = uuid.uuid4()
+
+    research_run = ResearchRun(
+        id=uuid.uuid4(),
+        research_plan_id=research_plan_id,
+    )
+    research_task = ResearchTask(
+        id=uuid.uuid4(),
+        research_plan_id=research_plan_id,
+    )
+
+    ensure_research_task_matches_run_plan(
+        research_run=research_run,
+        research_task=research_task,
+    )
+
+
+def test_research_task_run_plan_invariant_rejects_different_plan():
+    research_run = ResearchRun(
+        id=uuid.uuid4(),
+        research_plan_id=uuid.uuid4(),
+    )
+    research_task = ResearchTask(
+        id=uuid.uuid4(),
+        research_plan_id=uuid.uuid4(),
+    )
+
+    with pytest.raises(
+        MarketIntelligenceInvariantError,
+        match=(
+            "ResearchTask must belong to the ResearchPlan "
+            "executed by the ResearchRun."
+        ),
+    ):
+        ensure_research_task_matches_run_plan(
+            research_run=research_run,
+            research_task=research_task,
+        )
+
+
+def test_build_research_task_execution():
+    research_plan_id = uuid.uuid4()
+    research_run_id = uuid.uuid4()
+    research_task_id = uuid.uuid4()
+
+    research_run = ResearchRun(
+        id=research_run_id,
+        research_plan_id=research_plan_id,
+    )
+    research_task = ResearchTask(
+        id=research_task_id,
+        research_plan_id=research_plan_id,
+    )
+
+    execution = build_research_task_execution(
+        research_run=research_run,
+        research_task=research_task,
+    )
+
+    assert execution.research_run_id == research_run_id
+    assert execution.research_task_id == research_task_id
+
+
+def test_build_research_task_execution_rejects_cross_plan_task():
+    research_run = ResearchRun(
+        id=uuid.uuid4(),
+        research_plan_id=uuid.uuid4(),
+    )
+    research_task = ResearchTask(
+        id=uuid.uuid4(),
+        research_plan_id=uuid.uuid4(),
+    )
+
+    with pytest.raises(MarketIntelligenceInvariantError):
+        build_research_task_execution(
+            research_run=research_run,
+            research_task=research_task,
         )
