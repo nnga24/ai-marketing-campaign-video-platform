@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import ForeignKey, String, Text, UniqueConstraint, Uuid
+from sqlalchemy import ForeignKey, Integer, String, Text, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database.base import Base
@@ -100,5 +100,63 @@ class Storyboard(
     parent_version_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True),
         ForeignKey("storyboards.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+class StoryboardScene(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    ProvenanceMixin,
+    Base,
+):
+    __tablename__ = "storyboard_scenes"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "storyboard_id",
+            "scene_key",
+            name="uq_storyboard_scenes_storyboard_key",
+        ),
+        UniqueConstraint(
+            "storyboard_id",
+            "sequence_index",
+            name="uq_storyboard_scenes_storyboard_sequence",
+        ),
+    )
+
+    storyboard_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("storyboards.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    scene_key: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+
+    sequence_index: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    purpose: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+
+    voiceover_text: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    visual_direction: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    on_screen_text: Mapped[str | None] = mapped_column(
+        Text,
         nullable=True,
     )

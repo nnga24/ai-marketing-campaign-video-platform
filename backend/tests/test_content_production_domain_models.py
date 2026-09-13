@@ -2,6 +2,7 @@ from sqlalchemy import UniqueConstraint
 
 from modules.content_production.models import (
     Storyboard,
+    StoryboardScene,
     VideoBrief,
     VideoBriefInstruction,
 )
@@ -145,4 +146,60 @@ def test_storyboard_video_brief_version_unique_constraint():
     assert [column.name for column in matching_constraint.columns] == [
         "video_brief_id",
         "version",
+    ]
+
+def test_storyboard_scene_table_contract():
+    columns = StoryboardScene.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "storyboard_id",
+        "scene_key",
+        "sequence_index",
+        "purpose",
+        "voiceover_text",
+        "visual_direction",
+        "on_screen_text",
+        "created_at",
+        "updated_at",
+        "source_type",
+    }
+
+    assert columns["storyboard_id"].nullable is False
+    assert columns["scene_key"].nullable is False
+    assert columns["sequence_index"].nullable is False
+    assert columns["purpose"].nullable is False
+    assert columns["voiceover_text"].nullable is True
+    assert columns["visual_direction"].nullable is True
+    assert columns["on_screen_text"].nullable is True
+    assert columns["source_type"].nullable is False
+
+    storyboard_fk = next(
+        iter(columns["storyboard_id"].foreign_keys)
+    )
+
+    assert storyboard_fk.target_fullname == "storyboards.id"
+    assert storyboard_fk.ondelete == "CASCADE"
+
+    assert "status" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_storyboard_scene_unique_constraints():
+    unique_constraints = {
+        constraint.name: [column.name for column in constraint.columns]
+        for constraint in StoryboardScene.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    }
+
+    assert unique_constraints["uq_storyboard_scenes_storyboard_key"] == [
+        "storyboard_id",
+        "scene_key",
+    ]
+
+    assert unique_constraints["uq_storyboard_scenes_storyboard_sequence"] == [
+        "storyboard_id",
+        "sequence_index",
     ]
