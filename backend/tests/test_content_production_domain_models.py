@@ -1,6 +1,7 @@
 from sqlalchemy import UniqueConstraint
 
 from modules.content_production.models import (
+    AssetRequirement,
     ProductionRun,
     Storyboard,
     StoryboardScene,
@@ -257,3 +258,53 @@ def test_production_run_defaults_to_pending():
 
     assert column.default.arg is ProductionRunStatus.PENDING
     assert column.server_default.arg == ProductionRunStatus.PENDING.value
+
+def test_asset_requirement_table_contract():
+    columns = AssetRequirement.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "storyboard_scene_id",
+        "requirement_key",
+        "asset_kind",
+        "description",
+        "rationale",
+        "created_at",
+        "updated_at",
+        "source_type",
+    }
+
+    assert columns["storyboard_scene_id"].nullable is False
+    assert columns["requirement_key"].nullable is False
+    assert columns["asset_kind"].nullable is False
+    assert columns["description"].nullable is False
+    assert columns["rationale"].nullable is True
+    assert columns["source_type"].nullable is False
+
+    scene_fk = next(
+        iter(columns["storyboard_scene_id"].foreign_keys)
+    )
+
+    assert scene_fk.target_fullname == "storyboard_scenes.id"
+    assert scene_fk.ondelete == "CASCADE"
+
+    assert columns["requirement_key"].type.length == 64
+    assert columns["asset_kind"].type.length == 64
+
+    assert "status" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_asset_requirement_unique_key_per_scene():
+    unique_constraints = {
+        constraint.name: [column.name for column in constraint.columns]
+        for constraint in AssetRequirement.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    }
+
+    assert unique_constraints["uq_asset_requirements_scene_key"] == [
+        "storyboard_scene_id",
+        "requirement_key",
+    ]

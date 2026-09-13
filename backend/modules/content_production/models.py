@@ -171,6 +171,49 @@ class StoryboardScene(
         nullable=True,
     )
 
+class AssetRequirement(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    ProvenanceMixin,
+    Base,
+):
+    __tablename__ = "asset_requirements"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "storyboard_scene_id",
+            "requirement_key",
+            name="uq_asset_requirements_scene_key",
+        ),
+    )
+
+    storyboard_scene_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("storyboard_scenes.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    requirement_key: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+
+    asset_kind: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+
+    description: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    rationale: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    
 class ProductionRun(
     UUIDPrimaryKeyMixin,
     TimestampMixin,
