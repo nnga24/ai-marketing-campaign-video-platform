@@ -1,6 +1,8 @@
 from datetime import datetime
 from decimal import Decimal
 from modules.performance_learning.models import (
+    PerformanceFinding,
+    PerformanceFindingMetric,
     PerformanceMetric,
     PerformanceRecord,
 )
@@ -110,4 +112,53 @@ def build_performance_metric(
         metric_key=normalized_metric_key,
         value=value,
         unit=normalized_unit,
+    )
+
+def ensure_performance_finding_metric_lineage(
+    *,
+    performance_finding: PerformanceFinding,
+    performance_metric: PerformanceMetric,
+    performance_record: PerformanceRecord,
+) -> None:
+    if performance_finding.id is None:
+        raise PerformanceLearningInvariantError(
+            "PerformanceFinding must be persisted before linking metrics."
+        )
+
+    if performance_metric.id is None:
+        raise PerformanceLearningInvariantError(
+            "PerformanceMetric must be persisted before linking to a finding."
+        )
+
+    if performance_record.id is None:
+        raise PerformanceLearningInvariantError(
+            "PerformanceRecord must be persisted before linking findings."
+        )
+
+    if performance_metric.performance_record_id != performance_record.id:
+        raise PerformanceLearningInvariantError(
+            "PerformanceMetric must belong to the supplied PerformanceRecord."
+        )
+
+    if performance_finding.publication_id != performance_record.publication_id:
+        raise PerformanceLearningInvariantError(
+            "PerformanceFinding and PerformanceMetric must belong to the same Publication."
+        )
+
+
+def build_performance_finding_metric_link(
+    *,
+    performance_finding: PerformanceFinding,
+    performance_metric: PerformanceMetric,
+    performance_record: PerformanceRecord,
+) -> PerformanceFindingMetric:
+    ensure_performance_finding_metric_lineage(
+        performance_finding=performance_finding,
+        performance_metric=performance_metric,
+        performance_record=performance_record,
+    )
+
+    return PerformanceFindingMetric(
+        performance_finding_id=performance_finding.id,
+        performance_metric_id=performance_metric.id,
     )

@@ -67,6 +67,8 @@ from modules.qa_approval_activation.models import (
 )
 
 from modules.performance_learning.models import (
+    PerformanceFinding,
+    PerformanceFindingMetric,
     PerformanceMetric,
     PerformanceRecord,
 )
@@ -123,4 +125,6 @@ __all__ = [
     "Publication",
     "PerformanceRecord",
     "PerformanceMetric",
+    "PerformanceFinding",
+    "PerformanceFindingMetric",
 ]

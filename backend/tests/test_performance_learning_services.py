@@ -4,12 +4,18 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from decimal import Decimal
 
-from modules.performance_learning.models import PerformanceRecord
+from modules.common.enums import SourceType
+from modules.performance_learning.models import (
+    PerformanceFinding,
+    PerformanceMetric,
+    PerformanceRecord,
+)
 
 from modules.performance_learning.services import (
     PerformanceLearningInvariantError,
     build_performance_record,
     build_performance_metric,
+    build_performance_finding_metric_link,
 )
 from modules.qa_approval_activation.enums import PublicationStatus
 from modules.qa_approval_activation.models import Publication
@@ -245,4 +251,207 @@ def test_performance_metric_requires_persisted_record():
             performance_record=record,
             metric_key="views",
             value=Decimal("100"),
+        )
+
+def test_build_performance_finding_metric_link():
+    publication_id = uuid.uuid4()
+
+    record = PerformanceRecord(
+        id=uuid.uuid4(),
+        publication_id=publication_id,
+        captured_at=datetime.now(timezone.utc),
+    )
+
+    metric = PerformanceMetric(
+        id=uuid.uuid4(),
+        performance_record_id=record.id,
+        metric_key="views",
+        value=Decimal("100"),
+    )
+
+    finding = PerformanceFinding(
+        id=uuid.uuid4(),
+        publication_id=publication_id,
+        finding_kind="PERFORMANCE_INSIGHT",
+        statement="Video generated meaningful reach.",
+        source_type=SourceType.AI_SUGGESTED,
+    )
+
+    link = build_performance_finding_metric_link(
+        performance_finding=finding,
+        performance_metric=metric,
+        performance_record=record,
+    )
+
+    assert link.performance_finding_id == finding.id
+    assert link.performance_metric_id == metric.id
+
+
+def test_finding_metric_link_requires_persisted_finding():
+    publication_id = uuid.uuid4()
+
+    record = PerformanceRecord(
+        id=uuid.uuid4(),
+        publication_id=publication_id,
+        captured_at=datetime.now(timezone.utc),
+    )
+
+    metric = PerformanceMetric(
+        id=uuid.uuid4(),
+        performance_record_id=record.id,
+        metric_key="views",
+        value=Decimal("100"),
+    )
+
+    finding = PerformanceFinding(
+        publication_id=publication_id,
+        finding_kind="PERFORMANCE_INSIGHT",
+        statement="Insight",
+        source_type=SourceType.AI_SUGGESTED,
+    )
+
+    with pytest.raises(
+        PerformanceLearningInvariantError,
+        match="PerformanceFinding must be persisted before linking metrics.",
+    ):
+        build_performance_finding_metric_link(
+            performance_finding=finding,
+            performance_metric=metric,
+            performance_record=record,
+        )
+
+
+def test_finding_metric_link_requires_persisted_metric():
+    publication_id = uuid.uuid4()
+
+    record = PerformanceRecord(
+        id=uuid.uuid4(),
+        publication_id=publication_id,
+        captured_at=datetime.now(timezone.utc),
+    )
+
+    metric = PerformanceMetric(
+        performance_record_id=record.id,
+        metric_key="views",
+        value=Decimal("100"),
+    )
+
+    finding = PerformanceFinding(
+        id=uuid.uuid4(),
+        publication_id=publication_id,
+        finding_kind="PERFORMANCE_INSIGHT",
+        statement="Insight",
+        source_type=SourceType.AI_SUGGESTED,
+    )
+
+    with pytest.raises(
+        PerformanceLearningInvariantError,
+        match="PerformanceMetric must be persisted before linking to a finding.",
+    ):
+        build_performance_finding_metric_link(
+            performance_finding=finding,
+            performance_metric=metric,
+            performance_record=record,
+        )
+
+
+def test_finding_metric_link_requires_persisted_record():
+    publication_id = uuid.uuid4()
+
+    record = PerformanceRecord(
+        publication_id=publication_id,
+        captured_at=datetime.now(timezone.utc),
+    )
+
+    metric = PerformanceMetric(
+        id=uuid.uuid4(),
+        performance_record_id=uuid.uuid4(),
+        metric_key="views",
+        value=Decimal("100"),
+    )
+
+    finding = PerformanceFinding(
+        id=uuid.uuid4(),
+        publication_id=publication_id,
+        finding_kind="PERFORMANCE_INSIGHT",
+        statement="Insight",
+        source_type=SourceType.AI_SUGGESTED,
+    )
+
+    with pytest.raises(
+        PerformanceLearningInvariantError,
+        match="PerformanceRecord must be persisted before linking findings.",
+    ):
+        build_performance_finding_metric_link(
+            performance_finding=finding,
+            performance_metric=metric,
+            performance_record=record,
+        )
+
+
+def test_finding_metric_link_rejects_metric_from_other_record():
+    publication_id = uuid.uuid4()
+
+    record = PerformanceRecord(
+        id=uuid.uuid4(),
+        publication_id=publication_id,
+        captured_at=datetime.now(timezone.utc),
+    )
+
+    metric = PerformanceMetric(
+        id=uuid.uuid4(),
+        performance_record_id=uuid.uuid4(),
+        metric_key="views",
+        value=Decimal("100"),
+    )
+
+    finding = PerformanceFinding(
+        id=uuid.uuid4(),
+        publication_id=publication_id,
+        finding_kind="PERFORMANCE_INSIGHT",
+        statement="Insight",
+        source_type=SourceType.AI_SUGGESTED,
+    )
+
+    with pytest.raises(
+        PerformanceLearningInvariantError,
+        match="PerformanceMetric must belong to the supplied PerformanceRecord.",
+    ):
+        build_performance_finding_metric_link(
+            performance_finding=finding,
+            performance_metric=metric,
+            performance_record=record,
+        )
+
+
+def test_finding_metric_link_rejects_other_publication():
+    record = PerformanceRecord(
+        id=uuid.uuid4(),
+        publication_id=uuid.uuid4(),
+        captured_at=datetime.now(timezone.utc),
+    )
+
+    metric = PerformanceMetric(
+        id=uuid.uuid4(),
+        performance_record_id=record.id,
+        metric_key="views",
+        value=Decimal("100"),
+    )
+
+    finding = PerformanceFinding(
+        id=uuid.uuid4(),
+        publication_id=uuid.uuid4(),
+        finding_kind="PERFORMANCE_INSIGHT",
+        statement="Insight",
+        source_type=SourceType.AI_SUGGESTED,
+    )
+
+    with pytest.raises(
+        PerformanceLearningInvariantError,
+        match="PerformanceFinding and PerformanceMetric must belong to the same Publication.",
+    ):
+        build_performance_finding_metric_link(
+            performance_finding=finding,
+            performance_metric=metric,
+            performance_record=record,
         )

@@ -1,8 +1,10 @@
 from modules.performance_learning.models import PerformanceRecord
 
 from sqlalchemy import UniqueConstraint
-
+from modules.common.enums import SourceType
 from modules.performance_learning.models import (
+    PerformanceFinding,
+    PerformanceFindingMetric,
     PerformanceMetric,
     PerformanceRecord,
 )
@@ -103,4 +105,97 @@ def test_performance_metric_unique_key_per_record():
     ] == [
         "performance_record_id",
         "metric_key",
+    ]
+
+def test_performance_finding_table_contract():
+    columns = PerformanceFinding.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "publication_id",
+        "finding_kind",
+        "statement",
+        "rationale",
+        "source_type",
+        "created_at",
+        "updated_at",
+    }
+
+    assert columns["publication_id"].nullable is False
+    assert columns["finding_kind"].nullable is False
+    assert columns["statement"].nullable is False
+    assert columns["rationale"].nullable is True
+    assert columns["source_type"].nullable is False
+
+    publication_fk = next(
+        iter(columns["publication_id"].foreign_keys)
+    )
+
+    assert publication_fk.target_fullname == "publications.id"
+    assert publication_fk.ondelete == "RESTRICT"
+
+    assert columns["finding_kind"].type.length == 64
+    assert columns["source_type"].type.enum_class is SourceType
+    assert columns["source_type"].type.length == 32
+
+    assert "status" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+def test_performance_finding_metric_table_contract():
+    columns = PerformanceFindingMetric.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "performance_finding_id",
+        "performance_metric_id",
+        "created_at",
+        "updated_at",
+    }
+
+    assert columns["performance_finding_id"].nullable is False
+    assert columns["performance_metric_id"].nullable is False
+
+    finding_fk = next(
+        iter(columns["performance_finding_id"].foreign_keys)
+    )
+    metric_fk = next(
+        iter(columns["performance_metric_id"].foreign_keys)
+    )
+
+    assert (
+        finding_fk.target_fullname
+        == "performance_findings.id"
+    )
+    assert finding_fk.ondelete == "CASCADE"
+
+    assert (
+        metric_fk.target_fullname
+        == "performance_metrics.id"
+    )
+    assert metric_fk.ondelete == "RESTRICT"
+
+    assert "source_type" not in columns
+    assert "status" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_performance_finding_metric_unique_pair():
+    unique_constraints = {
+        constraint.name: [
+            column.name for column in constraint.columns
+        ]
+        for constraint
+        in PerformanceFindingMetric.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    }
+
+    assert unique_constraints[
+        "uq_performance_finding_metrics_pair"
+    ] == [
+        "performance_finding_id",
+        "performance_metric_id",
     ]
