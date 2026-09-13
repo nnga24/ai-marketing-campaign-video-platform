@@ -3,16 +3,24 @@ import uuid
 import pytest
 
 from modules.common.enums import SourceType
-from modules.content_production.models import Storyboard, VideoBrief
+from modules.content_production.models import (
+    ProductionRun,
+    Storyboard,
+    VideoBrief,
+)
 from modules.content_production.services import (
     ContentProductionInvariantError,
     build_storyboard_version,
     build_video_brief_version,
     ensure_storyboard_parent_matches_video_brief,
     ensure_video_brief_parent_matches_creative_variant,
+    ensure_production_run_transition_allowed,
+    transition_production_run,
 )
 from modules.creative_intelligence.models import CreativeVariant
+from datetime import datetime, timezone
 
+from modules.content_production.enums import ProductionRunStatus
 
 def build_creative_variant() -> CreativeVariant:
     return CreativeVariant(
@@ -203,3 +211,194 @@ def test_build_storyboard_rejects_cross_video_brief_parent():
             video_brief=video_brief,
             parent=parent,
         )
+
+def test_production_run_transition_allows_pending_to_running():
+    production_run = ProductionRun(
+        id=uuid.uuid4(),
+        storyboard_id=uuid.uuid4(),
+        status=ProductionRunStatus.PENDING,
+    )
+
+    ensure_production_run_transition_allowed(
+        production_run=production_run,
+        target_status=ProductionRunStatus.RUNNING,
+    )
+
+
+def test_production_run_transition_allows_pending_to_cancelled():
+    production_run = ProductionRun(
+        id=uuid.uuid4(),
+        storyboard_id=uuid.uuid4(),
+        status=ProductionRunStatus.PENDING,
+    )
+
+    ensure_production_run_transition_allowed(
+        production_run=production_run,
+        target_status=ProductionRunStatus.CANCELLED,
+    )
+
+
+def test_production_run_transition_allows_running_to_terminal_statuses():
+    production_run = ProductionRun(
+        id=uuid.uuid4(),
+        storyboard_id=uuid.uuid4(),
+        status=ProductionRunStatus.RUNNING,
+    )
+
+    for target_status in (
+        ProductionRunStatus.SUCCEEDED,
+        ProductionRunStatus.PARTIAL,
+        ProductionRunStatus.FAILED,
+        ProductionRunStatus.CANCELLED,
+    ):
+        ensure_production_run_transition_allowed(
+            production_run=production_run,
+            target_status=target_status,
+        )
+
+
+def test_production_run_transition_rejects_invalid_transition():
+    production_run = ProductionRun(
+        id=uuid.uuid4(),
+        storyboard_id=uuid.uuid4(),
+        status=ProductionRunStatus.PENDING,
+    )
+
+    with pytest.raises(
+        ContentProductionInvariantError,
+        match="ProductionRun transition PENDING -> SUCCEEDED is not allowed.",
+    ):
+        ensure_production_run_transition_allowed(
+            production_run=production_run,
+            target_status=ProductionRunStatus.SUCCEEDED,
+        )
+
+
+def test_transition_production_run_to_running_sets_started_at():
+    transitioned_at = datetime(
+        2026,
+        9,
+        13,
+        10,
+        0,
+        tzinfo=timezone.utc,
+    )
+
+    production_run = ProductionRun(
+        id=uuid.uuid4(),
+        storyboard_id=uuid.uuid4(),
+        status=ProductionRunStatus.PENDING,
+    )
+
+    result = transition_production_run(
+        production_run=production_run,
+        target_status=ProductionRunStatus.RUNNING,
+        transitioned_at=transitioned_at,
+    )
+
+    assert result is production_run
+    assert production_run.status is ProductionRunStatus.RUNNING
+    assert production_run.started_at == transitioned_at
+    assert production_run.finished_at is None
+
+
+def test_transition_production_run_to_terminal_sets_finished_at():
+    started_at = datetime(
+        2026,
+        9,
+        13,
+        10,
+        0,
+        tzinfo=timezone.utc,
+    )
+    finished_at = datetime(
+        2026,
+        9,
+        13,
+        10,
+        5,
+        tzinfo=timezone.utc,
+    )
+
+    production_run = ProductionRun(
+        id=uuid.uuid4(),
+        storyboard_id=uuid.uuid4(),
+        status=ProductionRunStatus.RUNNING,
+        started_at=started_at,
+    )
+
+    transition_production_run(
+        production_run=production_run,
+        target_status=ProductionRunStatus.SUCCEEDED,
+        transitioned_at=finished_at,
+    )
+
+    assert production_run.status is ProductionRunStatus.SUCCEEDED
+    assert production_run.started_at == started_at
+    assert production_run.finished_at == finished_at
+
+
+def test_transition_production_run_pending_to_cancelled_sets_finished_at():
+    cancelled_at = datetime(
+        2026,
+        9,
+        13,
+        10,
+        0,
+        tzinfo=timezone.utc,
+    )
+
+    production_run = ProductionRun(
+        id=uuid.uuid4(),
+        storyboard_id=uuid.uuid4(),
+        status=ProductionRunStatus.PENDING,
+    )
+
+    transition_production_run(
+        production_run=production_run,
+        target_status=ProductionRunStatus.CANCELLED,
+        transitioned_at=cancelled_at,
+    )
+
+    assert production_run.status is ProductionRunStatus.CANCELLED
+    assert production_run.started_at is None
+    assert production_run.finished_at == cancelled_at
+
+
+def test_transition_production_run_rejects_finish_before_start():
+    started_at = datetime(
+        2026,
+        9,
+        13,
+        10,
+        5,
+        tzinfo=timezone.utc,
+    )
+    invalid_finished_at = datetime(
+        2026,
+        9,
+        13,
+        10,
+        0,
+        tzinfo=timezone.utc,
+    )
+
+    production_run = ProductionRun(
+        id=uuid.uuid4(),
+        storyboard_id=uuid.uuid4(),
+        status=ProductionRunStatus.RUNNING,
+        started_at=started_at,
+    )
+
+    with pytest.raises(
+        ContentProductionInvariantError,
+        match="ProductionRun finished_at cannot be earlier than started_at.",
+    ):
+        transition_production_run(
+            production_run=production_run,
+            target_status=ProductionRunStatus.FAILED,
+            transitioned_at=invalid_finished_at,
+        )
+
+    assert production_run.status is ProductionRunStatus.RUNNING
+    assert production_run.finished_at is None

@@ -1,6 +1,16 @@
 import uuid
-
-from sqlalchemy import ForeignKey, Integer, String, Text, UniqueConstraint, Uuid
+from datetime import datetime
+from sqlalchemy import (
+    DateTime,
+    Enum as SAEnum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    Uuid,
+)
+from modules.content_production.enums import ProductionRunStatus
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database.base import Base
@@ -157,6 +167,46 @@ class StoryboardScene(
     )
 
     on_screen_text: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+class ProductionRun(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    Base,
+):
+    __tablename__ = "production_runs"
+
+    storyboard_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("storyboards.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    status: Mapped[ProductionRunStatus] = mapped_column(
+        SAEnum(
+            ProductionRunStatus,
+            native_enum=False,
+            length=32,
+        ),
+        nullable=False,
+        default=ProductionRunStatus.PENDING,
+        server_default=ProductionRunStatus.PENDING.value,
+    )
+
+    started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    finished_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    error_message: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )

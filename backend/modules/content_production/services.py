@@ -1,10 +1,80 @@
 from modules.creative_intelligence.models import CreativeVariant
-from modules.content_production.models import Storyboard, VideoBrief
+from modules.content_production.models import (
+    ProductionRun,
+    Storyboard,
+    VideoBrief,
+)
+from datetime import datetime
 
+from modules.content_production.enums import ProductionRunStatus
 
 class ContentProductionInvariantError(ValueError):
     pass
 
+_ALLOWED_PRODUCTION_RUN_TRANSITIONS: dict[
+    ProductionRunStatus,
+    frozenset[ProductionRunStatus],
+] = {
+    ProductionRunStatus.PENDING: frozenset({
+        ProductionRunStatus.RUNNING,
+        ProductionRunStatus.CANCELLED,
+    }),
+    ProductionRunStatus.RUNNING: frozenset({
+        ProductionRunStatus.SUCCEEDED,
+        ProductionRunStatus.PARTIAL,
+        ProductionRunStatus.FAILED,
+        ProductionRunStatus.CANCELLED,
+    }),
+    ProductionRunStatus.SUCCEEDED: frozenset(),
+    ProductionRunStatus.PARTIAL: frozenset(),
+    ProductionRunStatus.FAILED: frozenset(),
+    ProductionRunStatus.CANCELLED: frozenset(),
+}
+
+
+def ensure_production_run_transition_allowed(
+    *,
+    production_run: ProductionRun,
+    target_status: ProductionRunStatus,
+) -> None:
+    current_status = production_run.status
+
+    if target_status not in _ALLOWED_PRODUCTION_RUN_TRANSITIONS[current_status]:
+        raise ContentProductionInvariantError(
+            "ProductionRun transition "
+            f"{current_status.value} -> {target_status.value} "
+            "is not allowed."
+        )
+
+
+def transition_production_run(
+    *,
+    production_run: ProductionRun,
+    target_status: ProductionRunStatus,
+    transitioned_at: datetime,
+) -> ProductionRun:
+    ensure_production_run_transition_allowed(
+        production_run=production_run,
+        target_status=target_status,
+    )
+
+    if target_status is ProductionRunStatus.RUNNING:
+        production_run.status = target_status
+        production_run.started_at = transitioned_at
+        return production_run
+
+    if (
+        production_run.started_at is not None
+        and transitioned_at < production_run.started_at
+    ):
+        raise ContentProductionInvariantError(
+            "ProductionRun finished_at cannot be earlier than started_at."
+        )
+
+    production_run.status = target_status
+    production_run.finished_at = transitioned_at
+
+    return production_run
 
 def ensure_video_brief_parent_matches_creative_variant(
     *,

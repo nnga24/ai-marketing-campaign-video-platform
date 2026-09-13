@@ -1,12 +1,13 @@
 from sqlalchemy import UniqueConstraint
 
 from modules.content_production.models import (
+    ProductionRun,
     Storyboard,
     StoryboardScene,
     VideoBrief,
     VideoBriefInstruction,
 )
-
+from modules.content_production.enums import ProductionRunStatus
 
 def test_video_brief_table_contract():
     columns = VideoBrief.__table__.columns
@@ -203,3 +204,56 @@ def test_storyboard_scene_unique_constraints():
         "storyboard_id",
         "sequence_index",
     ]
+
+def test_production_run_table_contract():
+    columns = ProductionRun.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "storyboard_id",
+        "status",
+        "started_at",
+        "finished_at",
+        "error_message",
+        "created_at",
+        "updated_at",
+    }
+
+    assert columns["storyboard_id"].nullable is False
+    assert columns["status"].nullable is False
+    assert columns["started_at"].nullable is True
+    assert columns["finished_at"].nullable is True
+    assert columns["error_message"].nullable is True
+
+    storyboard_fk = next(
+        iter(columns["storyboard_id"].foreign_keys)
+    )
+
+    assert storyboard_fk.target_fullname == "storyboards.id"
+    assert storyboard_fk.ondelete == "CASCADE"
+
+    assert "source_type" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_production_run_status_contract():
+    column = ProductionRun.__table__.columns["status"]
+
+    assert column.type.enum_class is ProductionRunStatus
+    assert [item.value for item in ProductionRunStatus] == [
+        "PENDING",
+        "RUNNING",
+        "SUCCEEDED",
+        "PARTIAL",
+        "FAILED",
+        "CANCELLED",
+    ]
+
+
+def test_production_run_defaults_to_pending():
+    column = ProductionRun.__table__.columns["status"]
+
+    assert column.default.arg is ProductionRunStatus.PENDING
+    assert column.server_default.arg == ProductionRunStatus.PENDING.value
