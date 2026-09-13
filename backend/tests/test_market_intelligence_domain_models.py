@@ -1,6 +1,10 @@
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import CheckConstraint, UniqueConstraint
 
-from modules.market_intelligence.models import ResearchPlan
+from modules.common.enums import SourceType
+from modules.market_intelligence.models import (
+    ResearchPlan,
+    ResearchTask,
+)
 
 
 def test_research_plan_table_contract():
@@ -52,3 +56,74 @@ def test_research_plan_unique_version_per_marketing_brief():
         "marketing_brief_id",
         "version",
     ]
+
+def test_research_task_table_contract():
+    columns = ResearchTask.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "research_plan_id",
+        "position",
+        "objective",
+        "created_at",
+        "updated_at",
+        "source_type",
+    }
+
+    assert columns["research_plan_id"].nullable is False
+    assert columns["position"].nullable is False
+    assert columns["objective"].nullable is False
+    assert columns["source_type"].nullable is False
+
+    plan_fk = next(iter(columns["research_plan_id"].foreign_keys))
+
+    assert plan_fk.target_fullname == "research_plans.id"
+    assert plan_fk.ondelete == "CASCADE"
+
+    assert "status" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_research_task_unique_position_per_plan():
+    unique_constraints = [
+        constraint
+        for constraint in ResearchTask.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    ]
+
+    matching_constraint = next(
+        constraint
+        for constraint in unique_constraints
+        if constraint.name == "uq_research_tasks_plan_position"
+    )
+
+    assert [column.name for column in matching_constraint.columns] == [
+        "research_plan_id",
+        "position",
+    ]
+
+
+def test_research_task_position_must_be_positive():
+    check_constraints = [
+        constraint
+        for constraint in ResearchTask.__table__.constraints
+        if isinstance(constraint, CheckConstraint)
+    ]
+
+    matching_constraint = next(
+        constraint
+        for constraint in check_constraints
+        if constraint.name == "ck_research_tasks_position_positive"
+    )
+
+    assert str(matching_constraint.sqltext) == "position >= 1"
+
+
+def test_research_task_requires_explicit_source_type():
+    column = ResearchTask.__table__.columns["source_type"]
+
+    assert column.type.enum_class is SourceType
+    assert column.default is None
+    assert column.server_default is None

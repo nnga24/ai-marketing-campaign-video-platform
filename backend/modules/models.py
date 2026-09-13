@@ -10,7 +10,10 @@ from modules.brand_intelligence.models import (
     ProductFact,
     ProductTruth,
 )
-from modules.market_intelligence.models import ResearchPlan
+from modules.market_intelligence.models import (
+    ResearchPlan,
+    ResearchTask,
+)
 from modules.identity.models import User, WorkspaceMembership
 from modules.projects.models import Project
 from modules.workspaces.models import Workspace
@@ -37,4 +40,5 @@ __all__ = [
     "MarketingBrief",
     "MarketingRequirement",
     "ResearchPlan",
+    "ResearchTask",
 ]
