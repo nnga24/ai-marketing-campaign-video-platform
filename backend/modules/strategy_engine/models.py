@@ -108,3 +108,32 @@ class StrategyDecisionFinding(
         nullable=False,
         index=True,
     )
+
+class StrategyDecisionRequirement(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    Base,
+):
+    __tablename__ = "strategy_decision_requirements"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "strategy_decision_id",
+            "marketing_requirement_id",
+            name="uq_strategy_decision_requirement_pair",
+        ),
+    )
+
+    strategy_decision_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("strategy_decisions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    marketing_requirement_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("marketing_requirements.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )

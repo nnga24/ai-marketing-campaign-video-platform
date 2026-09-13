@@ -23,6 +23,7 @@ from modules.strategy_engine.models import (
     Strategy,
     StrategyDecision,
     StrategyDecisionFinding,
+    StrategyDecisionRequirement,
 )
 from modules.identity.models import User, WorkspaceMembership
 from modules.projects.models import Project
@@ -59,4 +60,5 @@ __all__ = [
     "Strategy",
     "StrategyDecision",
     "StrategyDecisionFinding",
+    "StrategyDecisionRequirement",
 ]

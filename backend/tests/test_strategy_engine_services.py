@@ -2,7 +2,10 @@ import uuid
 
 import pytest
 
-from modules.marketing_requirement.models import MarketingBrief
+from modules.marketing_requirement.models import (
+    MarketingBrief,
+    MarketingRequirement,
+)
 from modules.market_intelligence.models import (
     ResearchFinding,
     ResearchPlan,
@@ -18,6 +21,8 @@ from modules.strategy_engine.services import (
     build_strategy_decision_finding_link,
     ensure_strategy_decision_finding_matches_strategy_run,
     ensure_research_run_ready_for_strategy,
+    build_strategy_decision_requirement_link,
+    ensure_strategy_decision_requirement_matches_strategy_brief,
 )
 
 
@@ -392,4 +397,298 @@ def test_build_strategy_version_rejects_unready_research_run():
             research_run=research_run,
             research_plan=research_plan,
             marketing_brief=marketing_brief,
+        )
+
+def test_strategy_decision_requirement_lineage_accepts_matching_brief():
+    project_id = uuid.uuid4()
+    brief_id = uuid.uuid4()
+    plan_id = uuid.uuid4()
+    run_id = uuid.uuid4()
+    strategy_id = uuid.uuid4()
+
+    research_plan = ResearchPlan(
+        id=plan_id,
+        marketing_brief_id=brief_id,
+        version=1,
+    )
+    research_run = ResearchRun(
+        id=run_id,
+        research_plan_id=plan_id,
+        status=ResearchRunStatus.SUCCEEDED,
+    )
+    strategy = Strategy(
+        id=strategy_id,
+        project_id=project_id,
+        research_run_id=run_id,
+        version=1,
+    )
+    decision = StrategyDecision(
+        id=uuid.uuid4(),
+        strategy_id=strategy_id,
+    )
+    requirement = MarketingRequirement(
+        id=uuid.uuid4(),
+        marketing_brief_id=brief_id,
+    )
+
+    ensure_strategy_decision_requirement_matches_strategy_brief(
+        strategy_decision=decision,
+        strategy=strategy,
+        marketing_requirement=requirement,
+        research_run=research_run,
+        research_plan=research_plan,
+    )
+
+
+def test_strategy_decision_requirement_lineage_rejects_wrong_strategy():
+    brief_id = uuid.uuid4()
+    plan_id = uuid.uuid4()
+    run_id = uuid.uuid4()
+
+    research_plan = ResearchPlan(
+        id=plan_id,
+        marketing_brief_id=brief_id,
+        version=1,
+    )
+    research_run = ResearchRun(
+        id=run_id,
+        research_plan_id=plan_id,
+    )
+    strategy = Strategy(
+        id=uuid.uuid4(),
+        project_id=uuid.uuid4(),
+        research_run_id=run_id,
+        version=1,
+    )
+    decision = StrategyDecision(
+        id=uuid.uuid4(),
+        strategy_id=uuid.uuid4(),
+    )
+    requirement = MarketingRequirement(
+        id=uuid.uuid4(),
+        marketing_brief_id=brief_id,
+    )
+
+    with pytest.raises(
+        StrategyEngineInvariantError,
+        match="StrategyDecision must belong to the supplied Strategy.",
+    ):
+        ensure_strategy_decision_requirement_matches_strategy_brief(
+            strategy_decision=decision,
+            strategy=strategy,
+            marketing_requirement=requirement,
+            research_run=research_run,
+            research_plan=research_plan,
+        )
+
+
+def test_strategy_decision_requirement_lineage_rejects_wrong_run():
+    brief_id = uuid.uuid4()
+    plan_id = uuid.uuid4()
+
+    research_plan = ResearchPlan(
+        id=plan_id,
+        marketing_brief_id=brief_id,
+        version=1,
+    )
+    research_run = ResearchRun(
+        id=uuid.uuid4(),
+        research_plan_id=plan_id,
+    )
+    strategy_id = uuid.uuid4()
+    strategy = Strategy(
+        id=strategy_id,
+        project_id=uuid.uuid4(),
+        research_run_id=uuid.uuid4(),
+        version=1,
+    )
+    decision = StrategyDecision(
+        id=uuid.uuid4(),
+        strategy_id=strategy_id,
+    )
+    requirement = MarketingRequirement(
+        id=uuid.uuid4(),
+        marketing_brief_id=brief_id,
+    )
+
+    with pytest.raises(
+        StrategyEngineInvariantError,
+        match="Strategy must use the supplied ResearchRun.",
+    ):
+        ensure_strategy_decision_requirement_matches_strategy_brief(
+            strategy_decision=decision,
+            strategy=strategy,
+            marketing_requirement=requirement,
+            research_run=research_run,
+            research_plan=research_plan,
+        )
+
+
+def test_strategy_decision_requirement_lineage_rejects_wrong_plan():
+    brief_id = uuid.uuid4()
+    run_id = uuid.uuid4()
+
+    research_plan = ResearchPlan(
+        id=uuid.uuid4(),
+        marketing_brief_id=brief_id,
+        version=1,
+    )
+    research_run = ResearchRun(
+        id=run_id,
+        research_plan_id=uuid.uuid4(),
+    )
+    strategy_id = uuid.uuid4()
+    strategy = Strategy(
+        id=strategy_id,
+        project_id=uuid.uuid4(),
+        research_run_id=run_id,
+        version=1,
+    )
+    decision = StrategyDecision(
+        id=uuid.uuid4(),
+        strategy_id=strategy_id,
+    )
+    requirement = MarketingRequirement(
+        id=uuid.uuid4(),
+        marketing_brief_id=brief_id,
+    )
+
+    with pytest.raises(
+        StrategyEngineInvariantError,
+        match="ResearchRun must belong to the supplied ResearchPlan.",
+    ):
+        ensure_strategy_decision_requirement_matches_strategy_brief(
+            strategy_decision=decision,
+            strategy=strategy,
+            marketing_requirement=requirement,
+            research_run=research_run,
+            research_plan=research_plan,
+        )
+
+
+def test_strategy_decision_requirement_lineage_rejects_cross_brief_requirement():
+    plan_id = uuid.uuid4()
+    run_id = uuid.uuid4()
+    strategy_id = uuid.uuid4()
+
+    research_plan = ResearchPlan(
+        id=plan_id,
+        marketing_brief_id=uuid.uuid4(),
+        version=1,
+    )
+    research_run = ResearchRun(
+        id=run_id,
+        research_plan_id=plan_id,
+    )
+    strategy = Strategy(
+        id=strategy_id,
+        project_id=uuid.uuid4(),
+        research_run_id=run_id,
+        version=1,
+    )
+    decision = StrategyDecision(
+        id=uuid.uuid4(),
+        strategy_id=strategy_id,
+    )
+    requirement = MarketingRequirement(
+        id=uuid.uuid4(),
+        marketing_brief_id=uuid.uuid4(),
+    )
+
+    with pytest.raises(
+        StrategyEngineInvariantError,
+        match=(
+            "MarketingRequirement must belong to the MarketingBrief "
+            "used by the Strategy research lineage."
+        ),
+    ):
+        ensure_strategy_decision_requirement_matches_strategy_brief(
+            strategy_decision=decision,
+            strategy=strategy,
+            marketing_requirement=requirement,
+            research_run=research_run,
+            research_plan=research_plan,
+        )
+
+
+def test_build_strategy_decision_requirement_link():
+    brief_id = uuid.uuid4()
+    plan_id = uuid.uuid4()
+    run_id = uuid.uuid4()
+    strategy_id = uuid.uuid4()
+    decision_id = uuid.uuid4()
+    requirement_id = uuid.uuid4()
+
+    research_plan = ResearchPlan(
+        id=plan_id,
+        marketing_brief_id=brief_id,
+        version=1,
+    )
+    research_run = ResearchRun(
+        id=run_id,
+        research_plan_id=plan_id,
+    )
+    strategy = Strategy(
+        id=strategy_id,
+        project_id=uuid.uuid4(),
+        research_run_id=run_id,
+        version=1,
+    )
+    decision = StrategyDecision(
+        id=decision_id,
+        strategy_id=strategy_id,
+    )
+    requirement = MarketingRequirement(
+        id=requirement_id,
+        marketing_brief_id=brief_id,
+    )
+
+    link = build_strategy_decision_requirement_link(
+        strategy_decision=decision,
+        strategy=strategy,
+        marketing_requirement=requirement,
+        research_run=research_run,
+        research_plan=research_plan,
+    )
+
+    assert link.strategy_decision_id == decision_id
+    assert link.marketing_requirement_id == requirement_id
+
+
+def test_build_strategy_decision_requirement_link_rejects_cross_brief():
+    plan_id = uuid.uuid4()
+    run_id = uuid.uuid4()
+    strategy_id = uuid.uuid4()
+
+    research_plan = ResearchPlan(
+        id=plan_id,
+        marketing_brief_id=uuid.uuid4(),
+        version=1,
+    )
+    research_run = ResearchRun(
+        id=run_id,
+        research_plan_id=plan_id,
+    )
+    strategy = Strategy(
+        id=strategy_id,
+        project_id=uuid.uuid4(),
+        research_run_id=run_id,
+        version=1,
+    )
+    decision = StrategyDecision(
+        id=uuid.uuid4(),
+        strategy_id=strategy_id,
+    )
+    requirement = MarketingRequirement(
+        id=uuid.uuid4(),
+        marketing_brief_id=uuid.uuid4(),
+    )
+
+    with pytest.raises(StrategyEngineInvariantError):
+        build_strategy_decision_requirement_link(
+            strategy_decision=decision,
+            strategy=strategy,
+            marketing_requirement=requirement,
+            research_run=research_run,
+            research_plan=research_plan,
         )

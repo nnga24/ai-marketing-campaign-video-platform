@@ -6,10 +6,15 @@ from modules.market_intelligence.models import (
     ResearchPlan,
     ResearchRun,
 )
+from modules.marketing_requirement.models import (
+    MarketingBrief,
+    MarketingRequirement,
+)
 from modules.strategy_engine.models import (
     Strategy,
     StrategyDecision,
     StrategyDecisionFinding,
+    StrategyDecisionRequirement,
 )
 from modules.market_intelligence.enums import ResearchRunStatus
 class StrategyEngineInvariantError(ValueError):
@@ -41,6 +46,55 @@ def ensure_strategy_decision_finding_matches_strategy_run(
         raise StrategyEngineInvariantError(
             "ResearchFinding must belong to the ResearchRun used by the Strategy."
         )
+def ensure_strategy_decision_requirement_matches_strategy_brief(
+    *,
+    strategy_decision: StrategyDecision,
+    strategy: Strategy,
+    marketing_requirement: MarketingRequirement,
+    research_run: ResearchRun,
+    research_plan: ResearchPlan,
+) -> None:
+    if strategy_decision.strategy_id != strategy.id:
+        raise StrategyEngineInvariantError(
+            "StrategyDecision must belong to the supplied Strategy."
+        )
+
+    if strategy.research_run_id != research_run.id:
+        raise StrategyEngineInvariantError(
+            "Strategy must use the supplied ResearchRun."
+        )
+
+    if research_run.research_plan_id != research_plan.id:
+        raise StrategyEngineInvariantError(
+            "ResearchRun must belong to the supplied ResearchPlan."
+        )
+
+    if marketing_requirement.marketing_brief_id != research_plan.marketing_brief_id:
+        raise StrategyEngineInvariantError(
+            "MarketingRequirement must belong to the MarketingBrief "
+            "used by the Strategy research lineage."
+        )
+
+def build_strategy_decision_requirement_link(
+    *,
+    strategy_decision: StrategyDecision,
+    strategy: Strategy,
+    marketing_requirement: MarketingRequirement,
+    research_run: ResearchRun,
+    research_plan: ResearchPlan,
+) -> StrategyDecisionRequirement:
+    ensure_strategy_decision_requirement_matches_strategy_brief(
+        strategy_decision=strategy_decision,
+        strategy=strategy,
+        marketing_requirement=marketing_requirement,
+        research_run=research_run,
+        research_plan=research_plan,
+    )
+
+    return StrategyDecisionRequirement(
+        strategy_decision_id=strategy_decision.id,
+        marketing_requirement_id=marketing_requirement.id,
+    )
 
 def build_strategy_decision_finding_link(
     *,

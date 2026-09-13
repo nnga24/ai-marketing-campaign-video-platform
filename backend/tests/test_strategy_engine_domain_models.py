@@ -5,6 +5,7 @@ from modules.strategy_engine.models import (
     Strategy,
     StrategyDecision,
     StrategyDecisionFinding,
+    StrategyDecisionRequirement,
 )
 
 
@@ -150,4 +151,56 @@ def test_strategy_decision_finding_unique_pair():
     assert [column.name for column in matching_constraint.columns] == [
         "strategy_decision_id",
         "research_finding_id",
+    ]
+
+def test_strategy_decision_requirement_table_contract():
+    columns = StrategyDecisionRequirement.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "strategy_decision_id",
+        "marketing_requirement_id",
+        "created_at",
+        "updated_at",
+    }
+
+    assert columns["strategy_decision_id"].nullable is False
+    assert columns["marketing_requirement_id"].nullable is False
+
+    decision_fk = next(
+        iter(columns["strategy_decision_id"].foreign_keys)
+    )
+    requirement_fk = next(
+        iter(columns["marketing_requirement_id"].foreign_keys)
+    )
+
+    assert decision_fk.target_fullname == "strategy_decisions.id"
+    assert decision_fk.ondelete == "CASCADE"
+
+    assert requirement_fk.target_fullname == "marketing_requirements.id"
+    assert requirement_fk.ondelete == "RESTRICT"
+
+    assert "source_type" not in columns
+    assert "status" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_strategy_decision_requirement_unique_pair():
+    unique_constraints = [
+        constraint
+        for constraint in StrategyDecisionRequirement.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    ]
+
+    matching_constraint = next(
+        constraint
+        for constraint in unique_constraints
+        if constraint.name == "uq_strategy_decision_requirement_pair"
+    )
+
+    assert [column.name for column in matching_constraint.columns] == [
+        "strategy_decision_id",
+        "marketing_requirement_id",
     ]
