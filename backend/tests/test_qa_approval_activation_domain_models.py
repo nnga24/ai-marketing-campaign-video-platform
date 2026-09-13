@@ -1,10 +1,12 @@
 from modules.qa_approval_activation.enums import (
     ApprovalStatus,
+    PublicationStatus,
     QualityCheckOutcome,
     QualityReviewStatus,
 )
 from modules.qa_approval_activation.models import (
     Approval,
+    Publication,
     QualityCheckResult,
     QualityReview,
 )
@@ -151,3 +153,60 @@ def test_quality_check_result_unique_key_per_review():
         "quality_review_id",
         "check_key",
     ]
+
+def test_publication_table_contract():
+    columns = Publication.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "final_asset_id",
+        "approval_id",
+        "channel",
+        "status",
+        "provider_key",
+        "external_publication_id",
+        "published_url",
+        "published_at",
+        "error_message",
+        "created_at",
+        "updated_at",
+    }
+
+    assert columns["final_asset_id"].nullable is False
+    assert columns["approval_id"].nullable is False
+    assert columns["channel"].nullable is False
+    assert columns["status"].nullable is False
+
+    assert columns["provider_key"].nullable is True
+    assert columns["external_publication_id"].nullable is True
+    assert columns["published_url"].nullable is True
+    assert columns["published_at"].nullable is True
+    assert columns["error_message"].nullable is True
+
+    final_asset_fk = next(
+        iter(columns["final_asset_id"].foreign_keys)
+    )
+    approval_fk = next(
+        iter(columns["approval_id"].foreign_keys)
+    )
+
+    assert final_asset_fk.target_fullname == "final_assets.id"
+    assert final_asset_fk.ondelete == "RESTRICT"
+
+    assert approval_fk.target_fullname == "approvals.id"
+    assert approval_fk.ondelete == "RESTRICT"
+
+    assert columns["channel"].type.length == 64
+    assert columns["provider_key"].type.length == 128
+    assert columns["external_publication_id"].type.length == 255
+
+    assert columns["status"].type.enum_class is PublicationStatus
+    assert columns["status"].type.length == 32
+    assert columns["status"].server_default.arg == "PENDING"
+
+    assert columns["published_at"].type.timezone is True
+
+    assert "source_type" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns

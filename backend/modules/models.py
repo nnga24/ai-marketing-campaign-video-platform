@@ -61,6 +61,7 @@ from modules.content_production.models import (
 
 from modules.qa_approval_activation.models import (
     Approval,
+    Publication,
     QualityCheckResult,
     QualityReview,
 )
@@ -113,4 +114,5 @@ __all__ = [
     "Approval",
     "QualityReview",
     "QualityCheckResult",
+    "Publication",
 ]

@@ -22,3 +22,10 @@ class QualityCheckOutcome(str, Enum):
     WARN = "WARN"
     FAIL = "FAIL"
     NOT_APPLICABLE = "NOT_APPLICABLE"
+
+class PublicationStatus(str, Enum):
+    PENDING = "PENDING"
+    PUBLISHING = "PUBLISHING"
+    PUBLISHED = "PUBLISHED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"

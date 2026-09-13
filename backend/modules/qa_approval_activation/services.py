@@ -3,13 +3,15 @@ from datetime import datetime, timezone
 
 from modules.qa_approval_activation.enums import (
     ApprovalStatus,
+    PublicationStatus,
     QualityReviewStatus,
 )
 from modules.qa_approval_activation.models import (
     Approval,
+    Publication,
     QualityReview,
 )
-
+from modules.content_production.models import FinalAsset
 
 class ApprovalInvariantError(ValueError):
     pass
@@ -17,7 +19,24 @@ class ApprovalInvariantError(ValueError):
 class QualityReviewInvariantError(ValueError):
     pass
 
+class PublicationInvariantError(ValueError):
+    pass
 
+
+_PUBLICATION_TRANSITIONS = {
+    PublicationStatus.PENDING: {
+        PublicationStatus.PUBLISHING,
+        PublicationStatus.CANCELLED,
+    },
+    PublicationStatus.PUBLISHING: {
+        PublicationStatus.PUBLISHED,
+        PublicationStatus.FAILED,
+        PublicationStatus.CANCELLED,
+    },
+    PublicationStatus.PUBLISHED: set(),
+    PublicationStatus.FAILED: set(),
+    PublicationStatus.CANCELLED: set(),
+}
 _QUALITY_REVIEW_TRANSITIONS = {
     QualityReviewStatus.PENDING: {
         QualityReviewStatus.RUNNING,
@@ -124,3 +143,75 @@ def transition_quality_review(
         quality_review.error_message = None
 
     return quality_review
+
+def ensure_publication_is_approved_for_final_asset(
+    *,
+    final_asset: FinalAsset,
+    approval: Approval,
+) -> None:
+    if approval.final_asset_id != final_asset.id:
+        raise ApprovalInvariantError(
+            "Approval must belong to the FinalAsset being published."
+        )
+
+    if approval.status != ApprovalStatus.APPROVED:
+        raise ApprovalInvariantError(
+            "Publication requires an APPROVED Approval."
+        )
+
+
+def build_publication(
+    *,
+    final_asset: FinalAsset,
+    approval: Approval,
+    channel: str,
+    provider_key: str | None = None,
+) -> Publication:
+    ensure_publication_is_approved_for_final_asset(
+        final_asset=final_asset,
+        approval=approval,
+    )
+
+    return Publication(
+        final_asset_id=final_asset.id,
+        approval_id=approval.id,
+        channel=channel,
+        provider_key=provider_key,
+    )
+
+def transition_publication(
+    *,
+    publication: Publication,
+    target_status: PublicationStatus,
+    transitioned_at: datetime | None = None,
+    external_publication_id: str | None = None,
+    published_url: str | None = None,
+    error_message: str | None = None,
+) -> Publication:
+    allowed_targets = _PUBLICATION_TRANSITIONS[
+        publication.status
+    ]
+
+    if target_status not in allowed_targets:
+        raise PublicationInvariantError(
+            f"Publication cannot transition from "
+            f"{publication.status.value} to {target_status.value}."
+        )
+
+    occurred_at = transitioned_at or datetime.now(timezone.utc)
+
+    publication.status = target_status
+
+    if target_status == PublicationStatus.PUBLISHED:
+        publication.external_publication_id = external_publication_id
+        publication.published_url = published_url
+        publication.published_at = occurred_at
+        publication.error_message = None
+
+    elif target_status == PublicationStatus.FAILED:
+        publication.error_message = error_message
+
+    elif target_status == PublicationStatus.CANCELLED:
+        publication.error_message = None
+
+    return publication

@@ -16,6 +16,7 @@ from infrastructure.database.base import Base
 from modules.common.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 from modules.qa_approval_activation.enums import (
     ApprovalStatus,
+    PublicationStatus,
     QualityCheckOutcome,
     QualityReviewStatus,
 )
@@ -152,6 +153,68 @@ class QualityCheckResult(
     )
 
     summary: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+class Publication(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    Base,
+):
+    __tablename__ = "publications"
+
+    final_asset_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("final_assets.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+
+    approval_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("approvals.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+
+    channel: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+
+    status: Mapped[PublicationStatus] = mapped_column(
+        SAEnum(
+            PublicationStatus,
+            native_enum=False,
+            length=32,
+        ),
+        nullable=False,
+        default=PublicationStatus.PENDING,
+        server_default=PublicationStatus.PENDING.value,
+    )
+
+    provider_key: Mapped[str | None] = mapped_column(
+        String(128),
+        nullable=True,
+    )
+
+    external_publication_id: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    published_url: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    published_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    error_message: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
