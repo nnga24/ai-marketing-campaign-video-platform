@@ -11,6 +11,7 @@ from modules.brand_intelligence.models import (
     ProductTruth,
 )
 from modules.market_intelligence.models import (
+    ResearchEvidence,
     ResearchPlan,
     ResearchRun,
     ResearchTask,
@@ -45,4 +46,5 @@ __all__ = [
     "ResearchTask",
     "ResearchRun",
     "ResearchTaskExecution",
+    "ResearchEvidence",
 ]

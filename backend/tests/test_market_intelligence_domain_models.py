@@ -2,6 +2,7 @@ from sqlalchemy import CheckConstraint, UniqueConstraint
 
 from modules.common.enums import SourceType
 from modules.market_intelligence.models import (
+    ResearchEvidence,
     ResearchPlan,
     ResearchRun,
     ResearchTask,
@@ -263,3 +264,90 @@ def test_research_task_execution_unique_per_run_and_task():
         "research_run_id",
         "research_task_id",
     ]
+
+def test_research_evidence_table_contract():
+    columns = ResearchEvidence.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "research_task_execution_id",
+        "source_kind",
+        "provider_key",
+        "source_name",
+        "source_uri",
+        "source_external_id",
+        "title",
+        "content_text",
+        "content_fingerprint",
+        "published_at",
+        "retrieved_at",
+        "created_at",
+        "updated_at",
+    }
+
+    assert columns["research_task_execution_id"].nullable is False
+    assert columns["source_kind"].nullable is False
+    assert columns["content_text"].nullable is False
+    assert columns["content_fingerprint"].nullable is False
+    assert columns["retrieved_at"].nullable is False
+
+    assert columns["provider_key"].nullable is True
+    assert columns["source_name"].nullable is True
+    assert columns["source_uri"].nullable is True
+    assert columns["source_external_id"].nullable is True
+    assert columns["title"].nullable is True
+    assert columns["published_at"].nullable is True
+
+    execution_fk = next(
+        iter(columns["research_task_execution_id"].foreign_keys)
+    )
+
+    assert (
+        execution_fk.target_fullname
+        == "research_task_executions.id"
+    )
+    assert execution_fk.ondelete == "CASCADE"
+
+    assert "source_type" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_research_evidence_string_lengths():
+    columns = ResearchEvidence.__table__.columns
+
+    assert columns["source_kind"].type.length == 64
+    assert columns["provider_key"].type.length == 128
+    assert columns["source_name"].type.length == 255
+    assert columns["source_external_id"].type.length == 255
+    assert columns["content_fingerprint"].type.length == 64
+
+
+def test_research_evidence_unique_fingerprint_per_execution():
+    unique_constraints = [
+        constraint
+        for constraint in ResearchEvidence.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    ]
+
+    matching_constraint = next(
+        constraint
+        for constraint in unique_constraints
+        if constraint.name
+        == "uq_research_evidence_execution_fingerprint"
+    )
+
+    assert [column.name for column in matching_constraint.columns] == [
+        "research_task_execution_id",
+        "content_fingerprint",
+    ]
+
+
+def test_research_evidence_has_no_implicit_defaults():
+    columns = ResearchEvidence.__table__.columns
+
+    assert columns["source_kind"].default is None
+    assert columns["content_text"].default is None
+    assert columns["content_fingerprint"].default is None
+    assert columns["retrieved_at"].default is None

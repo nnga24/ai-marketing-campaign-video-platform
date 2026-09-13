@@ -6,6 +6,7 @@ from sqlalchemy import (
     Enum as SAEnum,
     ForeignKey,
     Integer,
+    String,
     Text,
     UniqueConstraint,
     Uuid,
@@ -186,4 +187,79 @@ class ResearchTaskExecution(
     error_message: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
+    )
+
+class ResearchEvidence(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    Base,
+):
+    __tablename__ = "research_evidence"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "research_task_execution_id",
+            "content_fingerprint",
+            name="uq_research_evidence_execution_fingerprint",
+        ),
+    )
+
+    research_task_execution_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey(
+            "research_task_executions.id",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
+        index=True,
+    )
+
+    source_kind: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+
+    provider_key: Mapped[str | None] = mapped_column(
+        String(128),
+        nullable=True,
+    )
+
+    source_name: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    source_uri: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    source_external_id: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    title: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    content_text: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    content_fingerprint: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+
+    published_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    retrieved_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
     )
