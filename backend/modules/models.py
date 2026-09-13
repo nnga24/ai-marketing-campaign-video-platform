@@ -13,6 +13,7 @@ from modules.brand_intelligence.models import (
 from modules.identity.models import User, WorkspaceMembership
 from modules.projects.models import Project
 from modules.workspaces.models import Workspace
+from modules.marketing_requirement.models import MarketingBrief
 
 __all__ = [
     "Workspace",
@@ -29,4 +30,5 @@ __all__ = [
     "ProductFact",
     "ProductClaim",
     "ProductClaimEvidence",
+    "MarketingBrief",
 ]
