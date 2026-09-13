@@ -33,6 +33,8 @@ from modules.marketing_requirement.models import (
     MarketingRequirement,
 )
 
+from modules.campaign_planning.models import Campaign, CampaignPlan
+
 __all__ = [
     "Workspace",
     "Project",
@@ -61,4 +63,6 @@ __all__ = [
     "StrategyDecision",
     "StrategyDecisionFinding",
     "StrategyDecisionRequirement",
+    "Campaign",
+    "CampaignPlan",
 ]
