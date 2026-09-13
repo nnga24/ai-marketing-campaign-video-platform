@@ -1,6 +1,9 @@
 import uuid
 
 from modules.market_intelligence.models import (
+    ResearchEvidence,
+    ResearchFinding,
+    ResearchFindingEvidence,
     ResearchPlan,
     ResearchRun,
     ResearchTask,
@@ -14,6 +17,40 @@ from modules.market_intelligence.enums import (
 )
 class MarketIntelligenceInvariantError(ValueError):
     pass
+
+def ensure_research_evidence_matches_finding_run(
+    *,
+    research_finding: ResearchFinding,
+    research_evidence: ResearchEvidence,
+    task_execution: ResearchTaskExecution,
+) -> None:
+    if research_evidence.research_task_execution_id != task_execution.id:
+        raise MarketIntelligenceInvariantError(
+            "ResearchEvidence must belong to the supplied ResearchTaskExecution."
+        )
+
+    if task_execution.research_run_id != research_finding.research_run_id:
+        raise MarketIntelligenceInvariantError(
+            "ResearchEvidence must belong to the same ResearchRun as the ResearchFinding."
+        )
+
+
+def build_research_finding_evidence_link(
+    *,
+    research_finding: ResearchFinding,
+    research_evidence: ResearchEvidence,
+    task_execution: ResearchTaskExecution,
+) -> ResearchFindingEvidence:
+    ensure_research_evidence_matches_finding_run(
+        research_finding=research_finding,
+        research_evidence=research_evidence,
+        task_execution=task_execution,
+    )
+
+    return ResearchFindingEvidence(
+        research_finding_id=research_finding.id,
+        research_evidence_id=research_evidence.id,
+    )
 
 _ALLOWED_RESEARCH_RUN_TRANSITIONS: dict[
     ResearchRunStatus,

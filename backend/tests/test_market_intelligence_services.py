@@ -3,6 +3,8 @@ import uuid
 import pytest
 from datetime import datetime, timezone
 from modules.market_intelligence.models import (
+    ResearchEvidence,
+    ResearchFinding,
     ResearchPlan,
     ResearchRun,
     ResearchTask,
@@ -22,6 +24,8 @@ from modules.market_intelligence.services import (
     transition_research_run,
     ensure_research_task_execution_transition_allowed,
     transition_research_task_execution,
+    build_research_finding_evidence_link,
+    ensure_research_evidence_matches_finding_run,
 )
 
 
@@ -504,3 +508,144 @@ def test_transition_research_task_execution_rejects_finish_before_start():
 
     assert execution.status is ResearchTaskExecutionStatus.RUNNING
     assert execution.finished_at is None
+
+def test_research_evidence_finding_run_invariant_accepts_matching_run():
+    research_run_id = uuid.uuid4()
+    execution_id = uuid.uuid4()
+
+    finding = ResearchFinding(
+        id=uuid.uuid4(),
+        research_run_id=research_run_id,
+    )
+    execution = ResearchTaskExecution(
+        id=execution_id,
+        research_run_id=research_run_id,
+        research_task_id=uuid.uuid4(),
+    )
+    evidence = ResearchEvidence(
+        id=uuid.uuid4(),
+        research_task_execution_id=execution_id,
+    )
+
+    ensure_research_evidence_matches_finding_run(
+        research_finding=finding,
+        research_evidence=evidence,
+        task_execution=execution,
+    )
+
+
+def test_research_evidence_finding_run_invariant_rejects_wrong_execution():
+    research_run_id = uuid.uuid4()
+
+    finding = ResearchFinding(
+        id=uuid.uuid4(),
+        research_run_id=research_run_id,
+    )
+    execution = ResearchTaskExecution(
+        id=uuid.uuid4(),
+        research_run_id=research_run_id,
+        research_task_id=uuid.uuid4(),
+    )
+    evidence = ResearchEvidence(
+        id=uuid.uuid4(),
+        research_task_execution_id=uuid.uuid4(),
+    )
+
+    with pytest.raises(
+        MarketIntelligenceInvariantError,
+        match=(
+            "ResearchEvidence must belong to the supplied "
+            "ResearchTaskExecution."
+        ),
+    ):
+        ensure_research_evidence_matches_finding_run(
+            research_finding=finding,
+            research_evidence=evidence,
+            task_execution=execution,
+        )
+
+
+def test_research_evidence_finding_run_invariant_rejects_cross_run():
+    execution_id = uuid.uuid4()
+
+    finding = ResearchFinding(
+        id=uuid.uuid4(),
+        research_run_id=uuid.uuid4(),
+    )
+    execution = ResearchTaskExecution(
+        id=execution_id,
+        research_run_id=uuid.uuid4(),
+        research_task_id=uuid.uuid4(),
+    )
+    evidence = ResearchEvidence(
+        id=uuid.uuid4(),
+        research_task_execution_id=execution_id,
+    )
+
+    with pytest.raises(
+        MarketIntelligenceInvariantError,
+        match=(
+            "ResearchEvidence must belong to the same ResearchRun "
+            "as the ResearchFinding."
+        ),
+    ):
+        ensure_research_evidence_matches_finding_run(
+            research_finding=finding,
+            research_evidence=evidence,
+            task_execution=execution,
+        )
+
+
+def test_build_research_finding_evidence_link():
+    research_run_id = uuid.uuid4()
+    execution_id = uuid.uuid4()
+    finding_id = uuid.uuid4()
+    evidence_id = uuid.uuid4()
+
+    finding = ResearchFinding(
+        id=finding_id,
+        research_run_id=research_run_id,
+    )
+    execution = ResearchTaskExecution(
+        id=execution_id,
+        research_run_id=research_run_id,
+        research_task_id=uuid.uuid4(),
+    )
+    evidence = ResearchEvidence(
+        id=evidence_id,
+        research_task_execution_id=execution_id,
+    )
+
+    link = build_research_finding_evidence_link(
+        research_finding=finding,
+        research_evidence=evidence,
+        task_execution=execution,
+    )
+
+    assert link.research_finding_id == finding_id
+    assert link.research_evidence_id == evidence_id
+
+
+def test_build_research_finding_evidence_link_rejects_cross_run():
+    execution_id = uuid.uuid4()
+
+    finding = ResearchFinding(
+        id=uuid.uuid4(),
+        research_run_id=uuid.uuid4(),
+    )
+    execution = ResearchTaskExecution(
+        id=execution_id,
+        research_run_id=uuid.uuid4(),
+        research_task_id=uuid.uuid4(),
+    )
+    evidence = ResearchEvidence(
+        id=uuid.uuid4(),
+        research_task_execution_id=execution_id,
+    )
+
+    with pytest.raises(MarketIntelligenceInvariantError):
+        build_research_finding_evidence_link(
+            research_finding=finding,
+            research_evidence=evidence,
+            task_execution=execution,
+        )
