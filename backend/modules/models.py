@@ -13,6 +13,7 @@ from modules.brand_intelligence.models import (
 from modules.market_intelligence.models import (
     ResearchEvidence,
     ResearchFinding,
+    ResearchFindingEvidence,
     ResearchPlan,
     ResearchRun,
     ResearchTask,
@@ -49,4 +50,5 @@ __all__ = [
     "ResearchTaskExecution",
     "ResearchEvidence",
     "ResearchFinding",
+    "ResearchFindingEvidence",
 ]

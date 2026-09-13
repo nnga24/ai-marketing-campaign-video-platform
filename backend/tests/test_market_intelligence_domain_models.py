@@ -4,6 +4,7 @@ from modules.common.enums import SourceType
 from modules.market_intelligence.models import (
     ResearchEvidence,
     ResearchFinding,
+    ResearchFindingEvidence,
     ResearchPlan,
     ResearchRun,
     ResearchTask,
@@ -399,3 +400,55 @@ def test_research_finding_requires_explicit_source_type():
     assert column.type.enum_class is SourceType
     assert column.default is None
     assert column.server_default is None
+
+def test_research_finding_evidence_table_contract():
+    columns = ResearchFindingEvidence.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "research_finding_id",
+        "research_evidence_id",
+        "created_at",
+        "updated_at",
+    }
+
+    assert columns["research_finding_id"].nullable is False
+    assert columns["research_evidence_id"].nullable is False
+
+    finding_fk = next(
+        iter(columns["research_finding_id"].foreign_keys)
+    )
+    evidence_fk = next(
+        iter(columns["research_evidence_id"].foreign_keys)
+    )
+
+    assert finding_fk.target_fullname == "research_findings.id"
+    assert finding_fk.ondelete == "CASCADE"
+
+    assert evidence_fk.target_fullname == "research_evidence.id"
+    assert evidence_fk.ondelete == "CASCADE"
+
+    assert "source_type" not in columns
+    assert "status" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_research_finding_evidence_unique_pair():
+    unique_constraints = [
+        constraint
+        for constraint in ResearchFindingEvidence.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    ]
+
+    matching_constraint = next(
+        constraint
+        for constraint in unique_constraints
+        if constraint.name == "uq_research_finding_evidence_pair"
+    )
+
+    assert [column.name for column in matching_constraint.columns] == [
+        "research_finding_id",
+        "research_evidence_id",
+    ]

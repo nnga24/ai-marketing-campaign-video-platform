@@ -293,3 +293,32 @@ class ResearchFinding(
         Text,
         nullable=True,
     )
+
+class ResearchFindingEvidence(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    Base,
+):
+    __tablename__ = "research_finding_evidence"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "research_finding_id",
+            "research_evidence_id",
+            name="uq_research_finding_evidence_pair",
+        ),
+    )
+
+    research_finding_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("research_findings.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    research_evidence_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("research_evidence.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
