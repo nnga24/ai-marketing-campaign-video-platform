@@ -15,6 +15,15 @@ class ProjectRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def get_by_workspace_and_slug(
+        self,
+        *,
+        workspace_id: UUID,
+        slug: str,
+    ) -> Project | None:
+        raise NotImplementedError
+
+    @abstractmethod
     def add(
         self,
         project: Project,

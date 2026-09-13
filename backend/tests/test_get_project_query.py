@@ -32,7 +32,14 @@ class FakeProjectRepository(ProjectRepository):
             return self._project
 
         return None
-
+    def get_by_workspace_and_slug(
+        self,
+        *,
+        workspace_id,
+        slug: str,
+    ) -> Project | None:
+        raise NotImplementedError
+    
     def add(
         self,
         project: Project,
