@@ -299,3 +299,45 @@ class ProductionAsset(
         String(128),
         nullable=True,
     )
+
+class FinalAsset(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    Base,
+):
+    __tablename__ = "final_assets"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "production_run_id",
+            "output_key",
+            name="uq_final_assets_run_output_key",
+        ),
+    )
+
+    production_run_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("production_runs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    output_key: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+
+    asset_kind: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+
+    storage_uri: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    mime_type: Mapped[str | None] = mapped_column(
+        String(128),
+        nullable=True,
+    )

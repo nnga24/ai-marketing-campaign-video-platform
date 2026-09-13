@@ -2,6 +2,7 @@ from sqlalchemy import UniqueConstraint
 
 from modules.content_production.models import (
     AssetRequirement,
+    FinalAsset,
     ProductionAsset,
     ProductionRun,
     Storyboard,
@@ -361,3 +362,54 @@ def test_production_asset_string_lengths():
     assert columns["provider_key"].type.length == 128
     assert columns["provider_asset_id"].type.length == 255
     assert columns["mime_type"].type.length == 128
+
+
+def test_final_asset_table_contract():
+    columns = FinalAsset.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "production_run_id",
+        "output_key",
+        "asset_kind",
+        "storage_uri",
+        "mime_type",
+        "created_at",
+        "updated_at",
+    }
+
+    assert columns["production_run_id"].nullable is False
+    assert columns["output_key"].nullable is False
+    assert columns["asset_kind"].nullable is False
+    assert columns["storage_uri"].nullable is False
+    assert columns["mime_type"].nullable is True
+
+    production_run_fk = next(
+        iter(columns["production_run_id"].foreign_keys)
+    )
+
+    assert production_run_fk.target_fullname == "production_runs.id"
+    assert production_run_fk.ondelete == "CASCADE"
+
+    assert columns["output_key"].type.length == 64
+    assert columns["asset_kind"].type.length == 64
+    assert columns["mime_type"].type.length == 128
+
+    assert "source_type" not in columns
+    assert "status" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_final_asset_unique_output_key_per_run():
+    unique_constraints = {
+        constraint.name: [column.name for column in constraint.columns]
+        for constraint in FinalAsset.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    }
+
+    assert unique_constraints["uq_final_assets_run_output_key"] == [
+        "production_run_id",
+        "output_key",
+    ]
