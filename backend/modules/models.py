@@ -48,6 +48,7 @@ from modules.creative_intelligence.models import (
 )
 
 from modules.content_production.models import (
+    Storyboard,
     VideoBrief,
     VideoBriefInstruction,
 )
@@ -90,4 +91,5 @@ __all__ = [
     "CreativeVariantDecision",
     "VideoBrief",
     "VideoBriefInstruction",
+    "Storyboard",
 ]

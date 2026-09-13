@@ -1,5 +1,5 @@
 from modules.creative_intelligence.models import CreativeVariant
-from modules.content_production.models import VideoBrief
+from modules.content_production.models import Storyboard, VideoBrief
 
 
 class ContentProductionInvariantError(ValueError):
@@ -29,6 +29,33 @@ def build_video_brief_version(
 
     return VideoBrief(
         creative_variant_id=creative_variant.id,
+        parent_version_id=parent.id if parent is not None else None,
+        version=parent.version + 1 if parent is not None else 1,
+    )
+
+def ensure_storyboard_parent_matches_video_brief(
+    *,
+    video_brief: VideoBrief,
+    parent: Storyboard | None,
+) -> None:
+    if parent is not None and parent.video_brief_id != video_brief.id:
+        raise ContentProductionInvariantError(
+            "Storyboard parent must belong to the same VideoBrief."
+        )
+
+
+def build_storyboard_version(
+    *,
+    video_brief: VideoBrief,
+    parent: Storyboard | None = None,
+) -> Storyboard:
+    ensure_storyboard_parent_matches_video_brief(
+        video_brief=video_brief,
+        parent=parent,
+    )
+
+    return Storyboard(
+        video_brief_id=video_brief.id,
         parent_version_id=parent.id if parent is not None else None,
         version=parent.version + 1 if parent is not None else 1,
     )

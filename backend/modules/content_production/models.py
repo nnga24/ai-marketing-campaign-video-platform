@@ -72,3 +72,33 @@ class VideoBriefInstruction(
         Text,
         nullable=True,
     )
+
+class Storyboard(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    LifecycleMixin,
+    VersionMetadataMixin,
+    Base,
+):
+    __tablename__ = "storyboards"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "video_brief_id",
+            "version",
+            name="uq_storyboards_video_brief_version",
+        ),
+    )
+
+    video_brief_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("video_briefs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    parent_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("storyboards.id", ondelete="SET NULL"),
+        nullable=True,
+    )
