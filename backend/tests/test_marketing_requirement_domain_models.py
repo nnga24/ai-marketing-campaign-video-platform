@@ -1,6 +1,14 @@
 from sqlalchemy import UniqueConstraint
 
-from modules.marketing_requirement.models import MarketingBrief
+from modules.marketing_requirement.models import (
+    MarketingBrief,
+    MarketingRequirement,
+)
+from modules.common.enums import SourceType
+from modules.marketing_requirement.enums import (
+    MarketingDecisionStatus,
+    MarketingRequirementType,
+)
 
 
 def test_marketing_brief_table_contract():
@@ -54,3 +62,55 @@ def test_marketing_brief_unique_version_per_project():
         "project_id",
         "version",
     ]
+
+
+def test_marketing_requirement_table_contract():
+    columns = MarketingRequirement.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "marketing_brief_id",
+        "requirement_type",
+        "statement",
+        "decision_status",
+        "created_at",
+        "updated_at",
+        "source_type",
+    }
+
+    assert columns["marketing_brief_id"].nullable is False
+    assert columns["requirement_type"].nullable is False
+    assert columns["statement"].nullable is False
+    assert columns["decision_status"].nullable is False
+    assert columns["source_type"].nullable is False
+
+    brief_fk = next(iter(columns["marketing_brief_id"].foreign_keys))
+
+    assert brief_fk.target_fullname == "marketing_briefs.id"
+    assert brief_fk.ondelete == "CASCADE"
+
+    assert "version" not in columns
+    assert "status" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_marketing_requirement_enum_contract():
+    columns = MarketingRequirement.__table__.columns
+
+    assert columns["requirement_type"].type.enum_class is MarketingRequirementType
+    assert columns["decision_status"].type.enum_class is MarketingDecisionStatus
+    assert columns["source_type"].type.enum_class is SourceType
+
+
+def test_marketing_requirement_requires_explicit_source_and_decision_status():
+    columns = MarketingRequirement.__table__.columns
+
+    assert columns["source_type"].default is None
+    assert columns["source_type"].server_default is None
+
+    assert columns["decision_status"].default is None
+    assert columns["decision_status"].server_default is None
+
+    assert columns["requirement_type"].default is None
+    assert columns["requirement_type"].server_default is None
