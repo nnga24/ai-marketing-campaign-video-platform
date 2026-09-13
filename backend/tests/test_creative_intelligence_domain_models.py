@@ -1,6 +1,9 @@
 from sqlalchemy import UniqueConstraint
 
-from modules.creative_intelligence.models import CreativeBrief
+from modules.creative_intelligence.models import (
+    CreativeBrief,
+    CreativeDecision,
+)
 
 
 def test_creative_brief_table_contract():
@@ -58,3 +61,48 @@ def test_creative_brief_content_item_version_unique_constraint():
         "content_item_id",
         "version",
     ]
+
+def test_creative_decision_table_contract():
+    columns = CreativeDecision.__table__.columns
+
+    assert set(columns.keys()) == {
+        "id",
+        "creative_brief_id",
+        "decision_kind",
+        "statement",
+        "rationale",
+        "created_at",
+        "updated_at",
+        "source_type",
+    }
+
+    assert columns["creative_brief_id"].nullable is False
+    assert columns["decision_kind"].nullable is False
+    assert columns["statement"].nullable is False
+    assert columns["rationale"].nullable is True
+    assert columns["source_type"].nullable is False
+
+    creative_brief_fk = next(
+        iter(columns["creative_brief_id"].foreign_keys)
+    )
+
+    assert creative_brief_fk.target_fullname == "creative_briefs.id"
+    assert creative_brief_fk.ondelete == "CASCADE"
+
+    assert "status" not in columns
+    assert "version" not in columns
+    assert "schema_version" not in columns
+    assert "is_outdated" not in columns
+
+
+def test_creative_decision_kind_is_not_unique():
+    unique_constraints = [
+        constraint
+        for constraint in CreativeDecision.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    ]
+
+    assert all(
+        [column.name for column in constraint.columns] != ["decision_kind"]
+        for constraint in unique_constraints
+    )

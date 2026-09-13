@@ -40,7 +40,10 @@ from modules.campaign_planning.models import (
     ContentItem,
 )
 
-from modules.creative_intelligence.models import CreativeBrief
+from modules.creative_intelligence.models import (
+    CreativeBrief,
+    CreativeDecision,
+)
 
 __all__ = [
     "Workspace",
@@ -75,4 +78,5 @@ __all__ = [
     "ChannelPlan",
     "ContentItem",
     "CreativeBrief",
+    "CreativeDecision",
 ]
