@@ -8,7 +8,7 @@ from modules.performance_learning.models import (
 )
 from modules.qa_approval_activation.enums import PublicationStatus
 from modules.qa_approval_activation.models import Publication
-
+from modules.common.enums import SourceType
 
 class PerformanceLearningInvariantError(ValueError):
     pass
@@ -161,4 +161,45 @@ def build_performance_finding_metric_link(
     return PerformanceFindingMetric(
         performance_finding_id=performance_finding.id,
         performance_metric_id=performance_metric.id,
+    )
+
+def build_performance_finding(
+    *,
+    publication: Publication,
+    finding_kind: str,
+    statement: str,
+    source_type: SourceType,
+    rationale: str | None = None,
+) -> PerformanceFinding:
+    ensure_publication_can_receive_performance_data(
+        publication=publication,
+    )
+
+    normalized_finding_kind = finding_kind.strip()
+    normalized_statement = statement.strip()
+    normalized_rationale = (
+        rationale.strip()
+        if rationale is not None
+        else None
+    )
+
+    if not normalized_finding_kind:
+        raise PerformanceLearningInvariantError(
+            "Performance finding kind cannot be empty."
+        )
+
+    if not normalized_statement:
+        raise PerformanceLearningInvariantError(
+            "Performance finding statement cannot be empty."
+        )
+
+    if normalized_rationale == "":
+        normalized_rationale = None
+
+    return PerformanceFinding(
+        publication_id=publication.id,
+        finding_kind=normalized_finding_kind,
+        statement=normalized_statement,
+        rationale=normalized_rationale,
+        source_type=source_type,
     )

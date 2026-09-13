@@ -16,6 +16,7 @@ from modules.performance_learning.services import (
     build_performance_record,
     build_performance_metric,
     build_performance_finding_metric_link,
+    build_performance_finding,
 )
 from modules.qa_approval_activation.enums import PublicationStatus
 from modules.qa_approval_activation.models import Publication
@@ -454,4 +455,64 @@ def test_finding_metric_link_rejects_other_publication():
             performance_finding=finding,
             performance_metric=metric,
             performance_record=record,
+        )
+def test_build_performance_finding():
+    publication = build_published_publication()
+
+    finding = build_performance_finding(
+        publication=publication,
+        finding_kind="  PERFORMANCE_INSIGHT  ",
+        statement="  Strong early engagement.  ",
+        rationale="  Views increased quickly.  ",
+        source_type=SourceType.AI_SUGGESTED,
+    )
+
+    assert finding.publication_id == publication.id
+    assert finding.finding_kind == "PERFORMANCE_INSIGHT"
+    assert finding.statement == "Strong early engagement."
+    assert finding.rationale == "Views increased quickly."
+    assert finding.source_type == SourceType.AI_SUGGESTED
+
+
+def test_performance_finding_blank_rationale_becomes_none():
+    publication = build_published_publication()
+
+    finding = build_performance_finding(
+        publication=publication,
+        finding_kind="PERFORMANCE_INSIGHT",
+        statement="Meaningful reach.",
+        rationale="   ",
+        source_type=SourceType.AI_SUGGESTED,
+    )
+
+    assert finding.rationale is None
+
+
+def test_performance_finding_kind_cannot_be_empty():
+    publication = build_published_publication()
+
+    with pytest.raises(
+        PerformanceLearningInvariantError,
+        match="Performance finding kind cannot be empty.",
+    ):
+        build_performance_finding(
+            publication=publication,
+            finding_kind="   ",
+            statement="Insight",
+            source_type=SourceType.AI_SUGGESTED,
+        )
+
+
+def test_performance_finding_statement_cannot_be_empty():
+    publication = build_published_publication()
+
+    with pytest.raises(
+        PerformanceLearningInvariantError,
+        match="Performance finding statement cannot be empty.",
+    ):
+        build_performance_finding(
+            publication=publication,
+            finding_kind="PERFORMANCE_INSIGHT",
+            statement="   ",
+            source_type=SourceType.AI_SUGGESTED,
         )
