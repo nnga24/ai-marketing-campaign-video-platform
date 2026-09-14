@@ -23,10 +23,16 @@ app.add_middleware(
 def read_root():
     return {"message": "Welcome to AI Video Marketing API"}
 
-from api.routes import project, generate
+from api.routes import generate, project, projects_v2
 
 app.include_router(project.router, prefix="/api/projects", tags=["Projects"])
 app.include_router(generate.router, prefix="/api/generate", tags=["Generation"])
+
+app.include_router(
+    projects_v2.router,
+    prefix="/api/v2/projects",
+    tags=["Projects v2"],
+)
 
 import os
 os.makedirs("frontend/css", exist_ok=True)
