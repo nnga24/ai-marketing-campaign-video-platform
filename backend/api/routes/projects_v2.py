@@ -2,7 +2,17 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from api.schemas.projects import ProjectResponse
+from api.schemas.projects import (
+    CreateProjectRequest,
+    CreateProjectResponse,
+    ProjectResponse,
+)
+from application.projects.commands import (
+    CreateProjectCommand,
+    ProjectSlugConflictError,
+    WorkspaceNotFoundError,
+    create_project,
+)
 from application.projects.queries import (
     ProjectNotFoundError,
     get_project,
@@ -19,6 +29,40 @@ router = APIRouter()
 def get_project_unit_of_work() -> ProjectUnitOfWork:
     return SQLAlchemyProjectUnitOfWork()
 
+@router.post(
+    "/",
+    response_model=CreateProjectResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_project_route(
+    request: CreateProjectRequest,
+    uow: ProjectUnitOfWork = Depends(
+        get_project_unit_of_work,
+    ),
+) -> CreateProjectResponse:
+    try:
+        project_id = create_project(
+            command=CreateProjectCommand(
+                workspace_id=request.workspace_id,
+                name=request.name,
+                slug=request.slug,
+            ),
+            uow=uow,
+        )
+    except WorkspaceNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except ProjectSlugConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+
+    return CreateProjectResponse(
+        id=project_id,
+    )
 
 @router.get(
     "/{project_id}",
