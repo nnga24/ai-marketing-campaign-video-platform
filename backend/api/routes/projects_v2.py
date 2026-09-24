@@ -2,10 +2,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from api.dependencies.auth import get_current_user_id
 from api.schemas.projects import (
     CreateProjectRequest,
     CreateProjectResponse,
     ProjectResponse,
+)
+from application.identity.access import (
+    WorkspaceAccessDeniedError,
 )
 from application.projects.commands import (
     CreateProjectCommand,
@@ -29,6 +33,7 @@ router = APIRouter()
 def get_project_unit_of_work() -> ProjectUnitOfWork:
     return SQLAlchemyProjectUnitOfWork()
 
+
 @router.post(
     "/",
     response_model=CreateProjectResponse,
@@ -36,6 +41,7 @@ def get_project_unit_of_work() -> ProjectUnitOfWork:
 )
 def create_project_route(
     request: CreateProjectRequest,
+    user_id: UUID = Depends(get_current_user_id),
     uow: ProjectUnitOfWork = Depends(
         get_project_unit_of_work,
     ),
@@ -44,6 +50,7 @@ def create_project_route(
         project_id = create_project(
             command=CreateProjectCommand(
                 workspace_id=request.workspace_id,
+                user_id=user_id,
                 name=request.name,
                 slug=request.slug,
             ),
@@ -52,6 +59,11 @@ def create_project_route(
     except WorkspaceNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except WorkspaceAccessDeniedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
             detail=str(exc),
         ) from exc
     except ProjectSlugConflictError as exc:
@@ -64,12 +76,14 @@ def create_project_route(
         id=project_id,
     )
 
+
 @router.get(
     "/{project_id}",
     response_model=ProjectResponse,
 )
 def read_project(
     project_id: UUID,
+    user_id: UUID = Depends(get_current_user_id),
     uow: ProjectUnitOfWork = Depends(
         get_project_unit_of_work,
     ),
@@ -77,11 +91,17 @@ def read_project(
     try:
         project = get_project(
             project_id=project_id,
+            user_id=user_id,
             uow=uow,
         )
     except ProjectNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except WorkspaceAccessDeniedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
             detail=str(exc),
         ) from exc
 

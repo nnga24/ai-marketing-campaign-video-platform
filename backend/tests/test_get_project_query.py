@@ -2,7 +2,13 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 import pytest
-from application.workspaces.repositories import WorkspaceRepository
+
+from application.identity.access import (
+    WorkspaceAccessDeniedError,
+)
+from application.identity.repositories import (
+    WorkspaceMembershipRepository,
+)
 from application.projects.dto import ProjectView
 from application.projects.queries import (
     ProjectNotFoundError,
@@ -10,11 +16,12 @@ from application.projects.queries import (
 )
 from application.projects.repositories import ProjectRepository
 from application.projects.unit_of_work import ProjectUnitOfWork
+from application.workspaces.repositories import WorkspaceRepository
 from modules.common.enums import EntityStatus
+from modules.identity.enums import WorkspaceRole
+from modules.identity.models import WorkspaceMembership
 from modules.projects.models import Project
-from application.identity.repositories import (
-    WorkspaceMembershipRepository,
-)
+
 
 class FakeProjectRepository(ProjectRepository):
     def __init__(
@@ -34,6 +41,7 @@ class FakeProjectRepository(ProjectRepository):
             return self._project
 
         return None
+
     def get_by_workspace_and_slug(
         self,
         *,
@@ -41,7 +49,7 @@ class FakeProjectRepository(ProjectRepository):
         slug: str,
     ) -> Project | None:
         raise NotImplementedError
-    
+
     def add(
         self,
         project: Project,
@@ -49,12 +57,32 @@ class FakeProjectRepository(ProjectRepository):
         raise NotImplementedError
 
 
+class FakeWorkspaceMembershipRepository(
+    WorkspaceMembershipRepository
+):
+    def __init__(
+        self,
+        membership: WorkspaceMembership | None,
+    ) -> None:
+        self._membership = membership
+
+    def get_active_membership(
+        self,
+        *,
+        workspace_id,
+        user_id,
+    ) -> WorkspaceMembership | None:
+        return self._membership
+
+
 class FakeProjectUnitOfWork(ProjectUnitOfWork):
     def __init__(
         self,
         repository: ProjectRepository,
+        memberships: WorkspaceMembershipRepository,
     ) -> None:
         self._repository = repository
+        self._memberships = memberships
         self.entered = False
         self.exited = False
         self.committed = False
@@ -81,24 +109,27 @@ class FakeProjectUnitOfWork(ProjectUnitOfWork):
 
         return self._repository
 
+    @property
+    def workspaces(self) -> WorkspaceRepository:
+        raise NotImplementedError
+
+    @property
+    def workspace_memberships(
+        self,
+    ) -> WorkspaceMembershipRepository:
+        return self._memberships
+
     def commit(self) -> None:
         self.committed = True
 
     def rollback(self) -> None:
         self.rolled_back = True
-    @property
-    def workspaces(self) -> WorkspaceRepository:
-        raise NotImplementedError
-    @property
-    def workspace_memberships(
-        self,
-        ) -> WorkspaceMembershipRepository:
-        raise NotImplementedError
 
 
 def test_get_project_returns_application_view():
     project_id = uuid4()
     workspace_id = uuid4()
+    user_id = uuid4()
     now = datetime.now(timezone.utc)
 
     project = Project(
@@ -111,12 +142,22 @@ def test_get_project_returns_application_view():
         updated_at=now,
     )
 
+    membership = WorkspaceMembership(
+        id=uuid4(),
+        workspace_id=workspace_id,
+        user_id=user_id,
+        role=WorkspaceRole.VIEWER,
+        is_active=True,
+    )
+
     uow = FakeProjectUnitOfWork(
         FakeProjectRepository(project),
+        FakeWorkspaceMembershipRepository(membership),
     )
 
     result = get_project(
         project_id=project_id,
+        user_id=user_id,
         uow=uow,
     )
 
@@ -136,9 +177,11 @@ def test_get_project_returns_application_view():
 
 def test_get_project_raises_when_project_does_not_exist():
     project_id = uuid4()
+    user_id = uuid4()
 
     uow = FakeProjectUnitOfWork(
         FakeProjectRepository(None),
+        FakeWorkspaceMembershipRepository(None),
     )
 
     with pytest.raises(
@@ -147,9 +190,41 @@ def test_get_project_raises_when_project_does_not_exist():
     ):
         get_project(
             project_id=project_id,
+            user_id=user_id,
             uow=uow,
         )
 
     assert uow.entered is True
     assert uow.exited is True
     assert uow.committed is False
+
+
+def test_get_project_denies_user_without_workspace_access():
+    project_id = uuid4()
+    workspace_id = uuid4()
+    user_id = uuid4()
+    now = datetime.now(timezone.utc)
+
+    project = Project(
+        id=project_id,
+        workspace_id=workspace_id,
+        name="Private Project",
+        slug="private-project",
+        status=EntityStatus.ACTIVE,
+        created_at=now,
+        updated_at=now,
+    )
+
+    uow = FakeProjectUnitOfWork(
+        FakeProjectRepository(project),
+        FakeWorkspaceMembershipRepository(None),
+    )
+
+    with pytest.raises(
+        WorkspaceAccessDeniedError,
+    ):
+        get_project(
+            project_id=project_id,
+            user_id=user_id,
+            uow=uow,
+        )
