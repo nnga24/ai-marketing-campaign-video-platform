@@ -13,7 +13,9 @@ from application.projects.unit_of_work import ProjectUnitOfWork
 from application.workspaces.repositories import WorkspaceRepository
 from modules.projects.models import Project
 from modules.workspaces.models import Workspace
-
+from application.identity.repositories import (
+    WorkspaceMembershipRepository,
+)
 
 class FakeProjectRepository(ProjectRepository):
     def __init__(
@@ -99,7 +101,11 @@ class FakeProjectUnitOfWork(ProjectUnitOfWork):
 
     def rollback(self) -> None:
         pass
-
+    @property
+    def workspace_memberships(
+        self,
+        ) -> WorkspaceMembershipRepository:
+        raise NotImplementedError
 
 def test_create_project_adds_project_and_commits():
     workspace_id = uuid4()

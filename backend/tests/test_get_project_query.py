@@ -12,7 +12,9 @@ from application.projects.repositories import ProjectRepository
 from application.projects.unit_of_work import ProjectUnitOfWork
 from modules.common.enums import EntityStatus
 from modules.projects.models import Project
-
+from application.identity.repositories import (
+    WorkspaceMembershipRepository,
+)
 
 class FakeProjectRepository(ProjectRepository):
     def __init__(
@@ -86,6 +88,11 @@ class FakeProjectUnitOfWork(ProjectUnitOfWork):
         self.rolled_back = True
     @property
     def workspaces(self) -> WorkspaceRepository:
+        raise NotImplementedError
+    @property
+    def workspace_memberships(
+        self,
+        ) -> WorkspaceMembershipRepository:
         raise NotImplementedError
 
 
