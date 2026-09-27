@@ -5,13 +5,16 @@ import pytest
 from fastapi import HTTPException
 
 from api.routes import projects_v2
-from application.projects.dto import ProjectView
-from application.projects.queries import ProjectNotFoundError
-from modules.common.enums import EntityStatus
 from api.schemas.projects import CreateProjectRequest
 from application.projects.commands import (
     ProjectSlugConflictError,
     WorkspaceNotFoundError,
+)
+from application.projects.dto import ProjectView
+from application.projects.queries import ProjectNotFoundError
+from modules.common.enums import EntityStatus
+from application.identity.access import (
+    WorkspaceAccessDeniedError,
 )
 
 def test_read_project_maps_application_view_to_response(
@@ -19,6 +22,7 @@ def test_read_project_maps_application_view_to_response(
 ):
     project_id = uuid4()
     workspace_id = uuid4()
+    expected_user_id = uuid4()
     now = datetime.now(timezone.utc)
 
     project = ProjectView(
@@ -31,7 +35,13 @@ def test_read_project_maps_application_view_to_response(
         updated_at=now,
     )
 
-    def fake_get_project(*, project_id, uow):
+    def fake_get_project(
+        *,
+        project_id,
+        user_id,
+        uow,
+    ):
+        assert user_id == expected_user_id
         return project
 
     monkeypatch.setattr(
@@ -42,6 +52,7 @@ def test_read_project_maps_application_view_to_response(
 
     response = projects_v2.read_project(
         project_id=project_id,
+        user_id=expected_user_id,
         uow=object(),
     )
 
@@ -58,8 +69,14 @@ def test_read_project_maps_not_found_to_http_404(
     monkeypatch: pytest.MonkeyPatch,
 ):
     project_id = uuid4()
+    user_id = uuid4()
 
-    def fake_get_project(*, project_id, uow):
+    def fake_get_project(
+        *,
+        project_id,
+        user_id,
+        uow,
+    ):
         raise ProjectNotFoundError(
             f"Project '{project_id}' was not found."
         )
@@ -73,6 +90,7 @@ def test_read_project_maps_not_found_to_http_404(
     with pytest.raises(HTTPException) as exc_info:
         projects_v2.read_project(
             project_id=project_id,
+            user_id=user_id,
             uow=object(),
         )
 
@@ -84,10 +102,12 @@ def test_create_project_route_returns_created_project_id(
     monkeypatch: pytest.MonkeyPatch,
 ):
     workspace_id = uuid4()
+    user_id = uuid4()
     project_id = uuid4()
 
     def fake_create_project(*, command, uow):
         assert command.workspace_id == workspace_id
+        assert command.user_id == user_id
         assert command.name == "Gà Ủ Muối Campaign"
         assert command.slug == "ga-u-muoi-campaign"
 
@@ -105,6 +125,7 @@ def test_create_project_route_returns_created_project_id(
             name="Gà Ủ Muối Campaign",
             slug="ga-u-muoi-campaign",
         ),
+        user_id=user_id,
         uow=object(),
     )
 
@@ -115,6 +136,7 @@ def test_create_project_route_maps_missing_workspace_to_http_404(
     monkeypatch: pytest.MonkeyPatch,
 ):
     workspace_id = uuid4()
+    user_id = uuid4()
 
     def fake_create_project(*, command, uow):
         raise WorkspaceNotFoundError(
@@ -134,6 +156,7 @@ def test_create_project_route_maps_missing_workspace_to_http_404(
                 name="Campaign",
                 slug="campaign",
             ),
+            user_id=user_id,
             uow=object(),
         )
 
@@ -145,6 +168,7 @@ def test_create_project_route_maps_slug_conflict_to_http_409(
     monkeypatch: pytest.MonkeyPatch,
 ):
     workspace_id = uuid4()
+    user_id = uuid4()
 
     def fake_create_project(*, command, uow):
         raise ProjectSlugConflictError(
@@ -164,8 +188,76 @@ def test_create_project_route_maps_slug_conflict_to_http_409(
                 name="Campaign",
                 slug="campaign",
             ),
+            user_id=user_id,
             uow=object(),
         )
 
     assert exc_info.value.status_code == 409
     assert "campaign" in exc_info.value.detail
+
+def test_read_project_maps_workspace_access_denied_to_http_403(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    project_id = uuid4()
+    workspace_id = uuid4()
+    user_id = uuid4()
+
+    def fake_get_project(
+        *,
+        project_id,
+        user_id,
+        uow,
+    ):
+        raise WorkspaceAccessDeniedError(
+            "User does not have access to workspace "
+            f"'{workspace_id}'."
+        )
+
+    monkeypatch.setattr(
+        projects_v2,
+        "get_project",
+        fake_get_project,
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        projects_v2.read_project(
+            project_id=project_id,
+            user_id=user_id,
+            uow=object(),
+        )
+
+    assert exc_info.value.status_code == 403
+    assert str(workspace_id) in exc_info.value.detail
+
+
+def test_create_project_route_maps_workspace_access_denied_to_http_403(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    workspace_id = uuid4()
+    user_id = uuid4()
+
+    def fake_create_project(*, command, uow):
+        raise WorkspaceAccessDeniedError(
+            "User does not have access to workspace "
+            f"'{workspace_id}'."
+        )
+
+    monkeypatch.setattr(
+        projects_v2,
+        "create_project",
+        fake_create_project,
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        projects_v2.create_project_route(
+            request=CreateProjectRequest(
+                workspace_id=workspace_id,
+                name="Campaign",
+                slug="campaign",
+            ),
+            user_id=user_id,
+            uow=object(),
+        )
+
+    assert exc_info.value.status_code == 403
+    assert str(workspace_id) in exc_info.value.detail

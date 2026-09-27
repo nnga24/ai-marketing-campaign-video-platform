@@ -2,6 +2,12 @@ from uuid import uuid4
 
 import pytest
 
+from application.identity.access import (
+    WorkspaceAccessDeniedError,
+)
+from application.identity.repositories import (
+    WorkspaceMembershipRepository,
+)
 from application.projects.commands import (
     CreateProjectCommand,
     ProjectSlugConflictError,
@@ -11,6 +17,8 @@ from application.projects.commands import (
 from application.projects.repositories import ProjectRepository
 from application.projects.unit_of_work import ProjectUnitOfWork
 from application.workspaces.repositories import WorkspaceRepository
+from modules.identity.enums import WorkspaceRole
+from modules.identity.models import WorkspaceMembership
 from modules.projects.models import Project
 from modules.workspaces.models import Workspace
 
@@ -64,15 +72,35 @@ class FakeWorkspaceRepository(WorkspaceRepository):
         return None
 
 
+class FakeWorkspaceMembershipRepository(
+    WorkspaceMembershipRepository
+):
+    def __init__(
+        self,
+        membership: WorkspaceMembership | None,
+    ) -> None:
+        self._membership = membership
+
+    def get_active_membership(
+        self,
+        *,
+        workspace_id,
+        user_id,
+    ) -> WorkspaceMembership | None:
+        return self._membership
+
+
 class FakeProjectUnitOfWork(ProjectUnitOfWork):
     def __init__(
         self,
         *,
         projects: ProjectRepository,
         workspaces: WorkspaceRepository,
+        memberships: WorkspaceMembershipRepository,
     ) -> None:
         self._projects = projects
         self._workspaces = workspaces
+        self._memberships = memberships
         self.committed = False
 
     def __enter__(self):
@@ -94,6 +122,12 @@ class FakeProjectUnitOfWork(ProjectUnitOfWork):
     def workspaces(self) -> WorkspaceRepository:
         return self._workspaces
 
+    @property
+    def workspace_memberships(
+        self,
+    ) -> WorkspaceMembershipRepository:
+        return self._memberships
+
     def commit(self) -> None:
         self.committed = True
 
@@ -103,21 +137,36 @@ class FakeProjectUnitOfWork(ProjectUnitOfWork):
 
 def test_create_project_adds_project_and_commits():
     workspace_id = uuid4()
+    user_id = uuid4()
+
     workspace = Workspace(
         id=workspace_id,
         name="F&B Workspace",
         slug="fb-workspace",
     )
 
+    membership = WorkspaceMembership(
+        id=uuid4(),
+        workspace_id=workspace_id,
+        user_id=user_id,
+        role=WorkspaceRole.MEMBER,
+        is_active=True,
+    )
+
     projects = FakeProjectRepository()
+
     uow = FakeProjectUnitOfWork(
         projects=projects,
         workspaces=FakeWorkspaceRepository(workspace),
+        memberships=FakeWorkspaceMembershipRepository(
+            membership,
+        ),
     )
 
     project_id = create_project(
         command=CreateProjectCommand(
             workspace_id=workspace_id,
+            user_id=user_id,
             name="Gà Ủ Muối Campaign",
             slug="ga-u-muoi-campaign",
         ),
@@ -134,11 +183,14 @@ def test_create_project_adds_project_and_commits():
 
 def test_create_project_raises_when_workspace_does_not_exist():
     workspace_id = uuid4()
+    user_id = uuid4()
 
     projects = FakeProjectRepository()
+
     uow = FakeProjectUnitOfWork(
         projects=projects,
         workspaces=FakeWorkspaceRepository(None),
+        memberships=FakeWorkspaceMembershipRepository(None),
     )
 
     with pytest.raises(
@@ -148,6 +200,7 @@ def test_create_project_raises_when_workspace_does_not_exist():
         create_project(
             command=CreateProjectCommand(
                 workspace_id=workspace_id,
+                user_id=user_id,
                 name="Campaign",
                 slug="campaign",
             ),
@@ -160,10 +213,20 @@ def test_create_project_raises_when_workspace_does_not_exist():
 
 def test_create_project_raises_when_slug_already_exists():
     workspace_id = uuid4()
+    user_id = uuid4()
+
     workspace = Workspace(
         id=workspace_id,
         name="F&B Workspace",
         slug="fb-workspace",
+    )
+
+    membership = WorkspaceMembership(
+        id=uuid4(),
+        workspace_id=workspace_id,
+        user_id=user_id,
+        role=WorkspaceRole.MEMBER,
+        is_active=True,
     )
 
     existing_project = Project(
@@ -176,9 +239,13 @@ def test_create_project_raises_when_slug_already_exists():
     projects = FakeProjectRepository(
         existing_project=existing_project,
     )
+
     uow = FakeProjectUnitOfWork(
         projects=projects,
         workspaces=FakeWorkspaceRepository(workspace),
+        memberships=FakeWorkspaceMembershipRepository(
+            membership,
+        ),
     )
 
     with pytest.raises(
@@ -188,7 +255,53 @@ def test_create_project_raises_when_slug_already_exists():
         create_project(
             command=CreateProjectCommand(
                 workspace_id=workspace_id,
+                user_id=user_id,
                 name="New Campaign",
+                slug="campaign",
+            ),
+            uow=uow,
+        )
+
+    assert projects.added_project is None
+    assert uow.committed is False
+
+
+def test_create_project_denies_user_without_write_access():
+    workspace_id = uuid4()
+    user_id = uuid4()
+
+    workspace = Workspace(
+        id=workspace_id,
+        name="F&B Workspace",
+        slug="fb-workspace",
+    )
+
+    membership = WorkspaceMembership(
+        id=uuid4(),
+        workspace_id=workspace_id,
+        user_id=user_id,
+        role=WorkspaceRole.VIEWER,
+        is_active=True,
+    )
+
+    projects = FakeProjectRepository()
+
+    uow = FakeProjectUnitOfWork(
+        projects=projects,
+        workspaces=FakeWorkspaceRepository(workspace),
+        memberships=FakeWorkspaceMembershipRepository(
+            membership,
+        ),
+    )
+
+    with pytest.raises(
+        WorkspaceAccessDeniedError,
+    ):
+        create_project(
+            command=CreateProjectCommand(
+                workspace_id=workspace_id,
+                user_id=user_id,
+                name="Campaign",
                 slug="campaign",
             ),
             uow=uow,

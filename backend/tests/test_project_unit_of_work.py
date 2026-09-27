@@ -11,7 +11,9 @@ from infrastructure.database.project_unit_of_work import (
 from infrastructure.database.repositories.projects import (
     SQLAlchemyProjectRepository,
 )
-
+from infrastructure.database.repositories.workspace_memberships import (
+    SQLAlchemyWorkspaceMembershipRepository,
+)
 
 def build_project_uow():
     session = MagicMock(spec=Session)
@@ -50,6 +52,17 @@ def test_project_unit_of_work_exposes_workspace_repository():
         )
         assert repository._session is session
 
+def test_project_unit_of_work_exposes_workspace_membership_repository():
+    uow, session, _ = build_project_uow()
+
+    with uow:
+        repository = uow.workspace_memberships
+
+        assert isinstance(
+            repository,
+            SQLAlchemyWorkspaceMembershipRepository,
+        )
+        assert repository._session is session
 
 def test_project_unit_of_work_requires_active_context_for_repository():
     uow, _, _ = build_project_uow()
