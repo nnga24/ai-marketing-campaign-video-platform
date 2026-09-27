@@ -51,17 +51,11 @@ def get_access_token_verifier() -> AccessTokenVerifier:
         jwks_url=settings.AUTH_JWKS_URL,
         algorithms=algorithms,
     )
-
-
-def get_current_user_id(
+def get_bearer_token(
     credentials: HTTPAuthorizationCredentials | None = Security(
         bearer_scheme,
     ),
-    db: Session = Depends(get_db),
-    verifier: AccessTokenVerifier = Depends(
-        get_access_token_verifier,
-    ),
-) -> UUID:
+) -> str:
     if (
         credentials is None
         or credentials.scheme.lower() != "bearer"
@@ -74,10 +68,17 @@ def get_current_user_id(
             },
         )
 
+    return credentials.credentials
+
+def get_current_user_id(
+    token: str = Depends(get_bearer_token),
+    db: Session = Depends(get_db),
+    verifier: AccessTokenVerifier = Depends(
+        get_access_token_verifier,
+    ),
+) -> UUID:
     try:
-        identity = verifier.verify(
-            credentials.credentials,
-        )
+        identity = verifier.verify(token)
 
         return resolve_authenticated_user_id(
             identity=identity,

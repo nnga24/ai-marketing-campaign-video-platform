@@ -4,7 +4,10 @@ import pytest
 from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 
-from api.dependencies.auth import get_current_user_id
+from api.dependencies.auth import (
+    get_bearer_token,
+    get_current_user_id,
+)
 from application.identity.authentication import (
     VerifiedExternalIdentity,
 )
@@ -64,12 +67,10 @@ class FakeSession:
         return self._user
 
 
-def test_get_current_user_id_fails_closed_without_authentication():
+def test_get_bearer_token_fails_closed_without_authentication():
     with pytest.raises(HTTPException) as exc_info:
-        get_current_user_id(
+        get_bearer_token(
             credentials=None,
-            db=object(),
-            verifier=object(),
         )
 
     assert exc_info.value.status_code == 401
@@ -77,6 +78,19 @@ def test_get_current_user_id_fails_closed_without_authentication():
     assert exc_info.value.headers == {
         "WWW-Authenticate": "Bearer",
     }
+
+
+def test_get_bearer_token_returns_credentials():
+    credentials = HTTPAuthorizationCredentials(
+        scheme="Bearer",
+        credentials="signed-token",
+    )
+
+    result = get_bearer_token(
+        credentials=credentials,
+    )
+
+    assert result == "signed-token"
 
 
 def test_get_current_user_id_resolves_valid_bearer_token():
@@ -95,13 +109,8 @@ def test_get_current_user_id_resolves_valid_bearer_token():
         is_active=True,
     )
 
-    credentials = HTTPAuthorizationCredentials(
-        scheme="Bearer",
-        credentials="signed-token",
-    )
-
     result = get_current_user_id(
-        credentials=credentials,
+        token="signed-token",
         db=FakeSession(
             external_identity=external_identity,
             user=user,
@@ -113,14 +122,9 @@ def test_get_current_user_id_resolves_valid_bearer_token():
 
 
 def test_get_current_user_id_maps_invalid_token_to_http_401():
-    credentials = HTTPAuthorizationCredentials(
-        scheme="Bearer",
-        credentials="invalid-token",
-    )
-
     with pytest.raises(HTTPException) as exc_info:
         get_current_user_id(
-            credentials=credentials,
+            token="invalid-token",
             db=object(),
             verifier=RejectingVerifier(),
         )
