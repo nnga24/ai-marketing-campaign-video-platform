@@ -66,6 +66,9 @@ class FakeSession:
 
         return self._user
 
+class UnlinkedIdentitySession:
+    def scalar(self, statement):
+        return None
 
 def test_get_bearer_token_fails_closed_without_authentication():
     with pytest.raises(HTTPException) as exc_info:
@@ -127,6 +130,21 @@ def test_get_current_user_id_maps_invalid_token_to_http_401():
             token="invalid-token",
             db=object(),
             verifier=RejectingVerifier(),
+        )
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Authentication failed."
+    assert exc_info.value.headers == {
+        "WWW-Authenticate": "Bearer",
+    }
+
+
+def test_get_current_user_id_maps_unlinked_identity_to_http_401():
+    with pytest.raises(HTTPException) as exc_info:
+        get_current_user_id(
+            token="signed-token",
+            db=UnlinkedIdentitySession(),
+            verifier=FakeVerifier(),
         )
 
     assert exc_info.value.status_code == 401
