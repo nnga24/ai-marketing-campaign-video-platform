@@ -45,6 +45,17 @@ def get_access_token_verifier() -> AccessTokenVerifier:
         if algorithm.strip()
     )
 
+    if (
+        not settings.AUTH_JWT_ISSUER
+        or not settings.AUTH_JWT_AUDIENCE
+        or not settings.AUTH_JWKS_URL
+        or not algorithms
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Authentication service is not configured.",
+        )
+
     return JWTAccessTokenVerifier(
         issuer=settings.AUTH_JWT_ISSUER,
         audience=settings.AUTH_JWT_AUDIENCE,

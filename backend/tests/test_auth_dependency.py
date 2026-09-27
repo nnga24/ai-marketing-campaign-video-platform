@@ -3,10 +3,11 @@ from uuid import uuid4
 import pytest
 from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
-
+from core.config import settings
 from api.dependencies.auth import (
     get_bearer_token,
     get_current_user_id,
+    get_access_token_verifier,
 )
 from application.identity.authentication import (
     VerifiedExternalIdentity,
@@ -152,3 +153,35 @@ def test_get_current_user_id_maps_unlinked_identity_to_http_401():
     assert exc_info.value.headers == {
         "WWW-Authenticate": "Bearer",
     }
+
+def test_get_access_token_verifier_maps_missing_configuration_to_503(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        settings,
+        "AUTH_JWT_ISSUER",
+        "",
+    )
+    monkeypatch.setattr(
+        settings,
+        "AUTH_JWT_AUDIENCE",
+        "api-audience",
+    )
+    monkeypatch.setattr(
+        settings,
+        "AUTH_JWKS_URL",
+        "https://issuer.example.com/.well-known/jwks.json",
+    )
+    monkeypatch.setattr(
+        settings,
+        "AUTH_JWT_ALGORITHMS",
+        "RS256",
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        get_access_token_verifier()
+
+    assert exc_info.value.status_code == 503
+    assert exc_info.value.detail == (
+        "Authentication service is not configured."
+    )
