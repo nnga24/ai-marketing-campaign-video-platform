@@ -8,7 +8,11 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = ""
-    
+    # Authentication
+    AUTH_JWT_ISSUER: str = ""
+    AUTH_JWT_AUDIENCE: str = ""
+    AUTH_JWKS_URL: str = ""
+    AUTH_JWT_ALGORITHMS: str = "RS256"
     # Models & Voice
     GEMINI_MODEL: str = "gemini-3.6-flash"
     ELEVENLABS_VOICE_ID: str = "Xb7hH8MSUJpSbSDYk0k2"

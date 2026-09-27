@@ -38,6 +38,40 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         server_default=text("true"),
     )
 
+class ExternalIdentity(
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+    Base,
+):
+    __tablename__ = "external_identities"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "issuer",
+            "subject",
+            name="uq_external_identities_issuer_subject",
+        ),
+    )
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey(
+            "users.id",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
+        index=True,
+    )
+
+    issuer: Mapped[str] = mapped_column(
+        String(512),
+        nullable=False,
+    )
+
+    subject: Mapped[str] = mapped_column(
+        String(512),
+        nullable=False,
+    )
 class WorkspaceMembership(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "workspace_memberships"
 
